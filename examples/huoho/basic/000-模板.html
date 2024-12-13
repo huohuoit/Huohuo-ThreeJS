@@ -39,16 +39,36 @@
     function init () {
       // 创建相机
       camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+<<<<<<< HEAD
+<<<<<<< HEAD
       camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
       camera.lookAt(0, 0, 0);
+=======
+      camera.position.set(100, 100, 100);
+      camera.lookAt(0, 10, 0);
+>>>>>>> f0b00d2200 (feat: 添加案例模板)
+=======
+      camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
+      camera.lookAt(0, 0, 0);
+>>>>>>> 50730c8295 (feat: 加载外部三维模型案例)
 
       // 创建场景
       scene = new THREE.Scene();
 
+<<<<<<< HEAD
+<<<<<<< HEAD
       
       /********************************创建模型-开始********************************/
 
 
+=======
+>>>>>>> f0b00d2200 (feat: 添加案例模板)
+=======
+      
+      /********************************创建模型********************************/
+
+
+>>>>>>> bb8c456d16 (perf: 优化模板注释分割)
       // 创建模型
       const geometry = new THREE.BoxGeometry(5, 5, 5);
       const material = new THREE.MeshPhongMaterial({
@@ -66,18 +86,37 @@
       dirLight.position.set(5, 10, 5);
       scene.add(dirLight);
 
+<<<<<<< HEAD
+<<<<<<< HEAD
 
       
       /********************************创建模型-结束********************************/
 
 
+=======
+>>>>>>> f0b00d2200 (feat: 添加案例模板)
+=======
+
+      
+      /********************************创建模型********************************/
+
+
+>>>>>>> bb8c456d16 (perf: 优化模板注释分割)
       // 添加辅助坐标系
       const axesHelper = new THREE.AxesHelper(50);
       axesHelper.layers.enableAll();
       scene.add(axesHelper);
 
       // 添加地面网格并设置颜色
+<<<<<<< HEAD
+<<<<<<< HEAD
       const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x888888);
+=======
+      const gridHelper = new THREE.GridHelper(100, 100, 0x444444, 0x888888);
+>>>>>>> f0b00d2200 (feat: 添加案例模板)
+=======
+      const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x888888);
+>>>>>>> 50730c8295 (feat: 加载外部三维模型案例)
       scene.add(gridHelper);
 
 
@@ -87,12 +126,24 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.domElement);
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 50730c8295 (feat: 加载外部三维模型案例)
       // 创建轨道控制器（控制相机,改变相机参数）
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.minDistance = 5;
       controls.maxDistance = 100;
       controls.target.set(0, 0, 0); //与lookAt参数保持一致
       controls.update();//update()函数内会执行camera.lookAt(controls.targe)
+<<<<<<< HEAD
+=======
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.minDistance = 5;
+      controls.maxDistance = 100;
+>>>>>>> f0b00d2200 (feat: 添加案例模板)
+=======
+>>>>>>> 50730c8295 (feat: 加载外部三维模型案例)
 
       // 执行渲染操作
       renderer.render(scene, camera);
