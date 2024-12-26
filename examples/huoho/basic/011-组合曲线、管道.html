@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      overflow: hidden;
+      margin: 0px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- <div id="webgl"></div> -->
+  <script type="importmap">
+          {
+          "imports": {
+            "three": "../../../build/three.module.js",
+            "three/addons/": "../../jsm/"
+          }
+          }
+  		</script>
+  <script type="module">
+    import * as THREE from '../../../build/three.module.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+    let gui;
+
+    let camera, scene, renderer;
+
+    init();
+    animate();
+
+    function init () {
+      // 创建相机
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+      camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
+      camera.lookAt(0, 0, 0);
+
+      // 创建场景
+      scene = new THREE.Scene();
+
+
+      /********************************创建模型-开始********************************/
+
+
+      /*
+      * 进阶：threejs的API绘制曲线——Curve
+      *
+      *     2D：LineCurve（直线）、ArcCurve（圆弧）、EllipseCurve（椭圆）、SplineCurve（二维样条曲线）、
+      *         QuadraticBezierCurve（二维二次贝塞尔曲线）、QuadraticBezierCurve（二维二次贝塞尔曲线）
+      *     3D：LineCurve3（直线）、CatmullRomCurve3（三维样条曲线）、
+      *         CubicBezierCurve（三维三次贝塞尔曲线）、CubicBezierCurve3（三维三次贝塞尔曲线）——————就是比二维多了个维度
+      */
+
+      // 组合曲线：先确定整个曲线的起点，然后沿着一个方向依次绘制不同曲线，确保不同曲线首尾相接
+      // 直线的起点是直线的第一个参数     圆弧线的起点，默认就是从x轴正半轴开始
+
+      const R = 20;//圆弧半径
+      const H = 200;//直线部分高度
+      const line1 = new THREE.LineCurve(new THREE.Vector2(R, H), new THREE.Vector2(R, 0)); // 直线1
+      const arc = new THREE.ArcCurve(0, 0, R, 0, Math.PI, true); // 圆弧
+      const line2 = new THREE.LineCurve(new THREE.Vector2(-R, 0), new THREE.Vector2(-R, H)); // 直线2
+      const CurvePath = new THREE.CurvePath(); // CurvePath创建一个组合曲线对象
+      CurvePath.curves.push(line1, arc, line2); //line1, arc, line2拼接出来一个U型轮廓曲线，注意顺序
+      const pointsArr = CurvePath.getPoints(16); //组合曲线上获取点
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setFromPoints(pointsArr);
+      const material2 = new THREE.PointsMaterial({
+        color: 0xff00ff,
+        size: 1,
+      });
+      const points = new THREE.Points(geometry, material2);
+      scene.add(points);
+
+      /*
+      * 曲线生成管道
+      */
+
+      const path = new THREE.CatmullRomCurve3([ // 三维样条曲线
+        new THREE.Vector3(-50, 20, 90),
+        new THREE.Vector3(-10, 40, 40),
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(60, -60, 0),
+        new THREE.Vector3(70, 0, 80)
+      ]);
+      const geometry1 = new THREE.TubeGeometry(path, 40, 2, 25); // path:路径   40：沿着轨迹细分数  2：管道半径   25：管道截面圆细分数
+      const material1 = new THREE.MeshLambertMaterial({
+        side: THREE.DoubleSide,//双面显示看到管道内壁
+      });
+      const line = new THREE.LineLoop(geometry1, material1);//线条模型对象
+      scene.add(line);
+
+
+      /*
+      * CurvePath多段路径生成管道案例
+      */
+
+      // 创建多段线条的顶点数据
+      const p1 = new THREE.Vector3(0, 0, 100)
+      const p2 = new THREE.Vector3(0, 0, 30);
+      const p3 = new THREE.Vector3(0, 0, 0);
+      const p4 = new THREE.Vector3(30, 0, 0);
+      const p5 = new THREE.Vector3(100, 0, 0);
+      // 1. 3D直线线段
+      const line3 = new THREE.LineCurve3(p1, p2);
+      // 2. 三维二次贝塞尔曲线
+      const curve = new THREE.QuadraticBezierCurve3(p2, p3, p4);
+      // 3. 3D直线线段
+      const line4 = new THREE.LineCurve3(p4, p5);
+
+      const CurvePath3 = new THREE.CurvePath();
+      // 三条线拼接为一条曲线
+      CurvePath3.curves.push(line3, curve, line4);
+
+      // CurvePath:路径   50：沿着轨迹细分数  2：管道半径   25：管道截面圆细分数 Boolean值（管道是否闭合）
+      const geometry3 = new THREE.TubeGeometry(CurvePath3, 50, 2, 25);
+      const material3 = new THREE.MeshLambertMaterial({
+        side: THREE.DoubleSide,//双面显示看到管道内壁
+      });
+      const mesh = new THREE.LineLoop(geometry3, material3);//线条模型对象
+      scene.add(mesh);
+
+      /********************************创建模型-结束********************************/
+
+
+      // 添加平行光
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+      dirLight.position.set(5, 10, 5);
+      scene.add(dirLight);
+
+      // 添加辅助坐标系
+      const axesHelper = new THREE.AxesHelper(50);
+      axesHelper.layers.enableAll();
+      scene.add(axesHelper);
+
+      // 添加地面网格并设置颜色
+      const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x888888);
+      scene.add(gridHelper);
+
+
+      // 创建WebGL渲染器
+      renderer = new THREE.WebGLRenderer();
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // 创建轨道控制器（控制相机,改变相机参数）
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.minDistance = 5;
+      controls.maxDistance = 100;
+      controls.target.set(0, 0, 0); //与lookAt参数保持一致
+      controls.update();//update()函数内会执行camera.lookAt(controls.targe)
+
+      // 执行渲染操作
+      renderer.render(scene, camera);
+
+      window.addEventListener('resize', onWindowResize);
+
+      initGui();
+    }
+
+
+    function onWindowResize () {
+
+      camera.aspect = window.innerWidth / window.innerHeight;
+
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+    }
+
+    // 执行渲染循环
+    function animate () {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+
+    }
+
+    function initGui () {
+
+      gui = new GUI();
+
+      gui.title('初始化GUI');
+
+      // gui.add(layers, 'Toggle Name');
+      // ...
+
+      gui.open();
+
+    }
+
+
+  </script>
+</body>
+
+</html>
