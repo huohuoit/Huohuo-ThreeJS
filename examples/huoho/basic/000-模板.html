@@ -45,6 +45,10 @@
       // 创建场景
       scene = new THREE.Scene();
 
+      
+      /********************************创建模型********************************/
+
+
       // 创建模型
       const geometry = new THREE.BoxGeometry(5, 5, 5);
       const material = new THREE.MeshPhongMaterial({
@@ -61,6 +65,11 @@
       const dirLight = new THREE.DirectionalLight(0xffffff, 1);
       dirLight.position.set(5, 10, 5);
       scene.add(dirLight);
+
+
+      
+      /********************************创建模型********************************/
+
 
       // 添加辅助坐标系
       const axesHelper = new THREE.AxesHelper(50);
