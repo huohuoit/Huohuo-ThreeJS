@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      overflow: hidden;
+      margin: 0px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- <div id="webgl"></div> -->
+  <script type="importmap">
+          {
+          "imports": {
+            "three": "../../../build/three.module.js",
+            "three/addons/": "../../jsm/"
+          }
+          }
+  		</script>
+  <script type="module">
+    import * as THREE from '../../../build/three.module.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+    let gui;
+
+    let camera, scene, renderer;
+
+    init();
+    animate();
+
+    function init () {
+      // 创建相机
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+      camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
+      camera.lookAt(0, 0, 0);
+
+      // 创建场景
+      scene = new THREE.Scene();
+
+
+      /********************************创建模型-开始********************************/
+
+
+      /*
+      * 基础：算法绘制圆弧线
+      */
+
+      // const geometry = new THREE.BufferGeometry(); //创建一个几何体对象
+      // // // 补充：.setFromPoints()可以把pointsArr里面坐标数据提取出来，赋值给geometry.attributes.position属性
+      // // const pointsArr = [
+      // //   // 三维向量Vector2表示的坐标值
+      // //   new THREE.Vector2(0, 0),
+      // //   new THREE.Vector2(100, 0),
+      // //   new THREE.Vector2(100, 100),
+      // //   new THREE.Vector2(0, 100),
+      // // ];
+      // // const pointsArr = [
+      // //   // 三维向量Vector3表示的坐标值
+      // //   new THREE.Vector3(0, 0, 0),
+      // //   new THREE.Vector3(0, 100, 0),
+      // //   new THREE.Vector3(0, 100, 100),
+      // //   new THREE.Vector3(0, 0, 100),
+      // // ];
+      // // geometry.setFromPoints(pointsArr);
+      // const R = 5; //圆弧半径
+      // const N = 50; //分段数量
+      // const sp = 2 * Math.PI / N;//两个相邻点间隔弧度（完整圆弧，半圆弧的话2改成1）
+      // // 设置圆心坐标
+      // const cx = 10;
+      // const cy = 5;
+      // // 批量生成圆弧上的顶点数据
+      // const arr = [];
+      // for (let i = 0; i < N; i++) {
+      //   const angle = sp * i;//当前点弧度
+      //   // 以坐标原点为中心，在XOY平面上生成圆弧上的顶点数据
+      //   const x = cx + R * Math.cos(angle);
+      //   const y = cy + R * Math.sin(angle);
+      //   arr.push(x, y, 0);
+      // }
+      // //类型数组创建顶点数据
+      // const vertices = new Float32Array(arr);
+      // // 创建属性缓冲区对象
+      // //3个为一组，表示一个顶点的xyz坐标
+      // const attribue = new THREE.BufferAttribute(vertices, 3);
+      // // 设置几何体attributes属性的位置属性
+      // geometry.attributes.position = attribue;
+
+      // // 线材质
+      // const material = new THREE.LineBasicMaterial({
+      //   color: 0xff0000 //线条颜色
+      // });
+      // // 创建线模型对象   构造函数：Line、LineLoop、LineSegments
+      // // const line = new THREE.Line(geometry, material); 
+      // const line = new THREE.LineLoop(geometry, material);//线条模型对象
+      // scene.add(line);
+
+
+      /*
+      * 进阶：threejs的API绘制曲线——Curve
+      *
+      *     2D：LineCurve（直线）、ArcCurve（圆弧）、EllipseCurve（椭圆）、SplineCurve（二维样条曲线）、
+      *         QuadraticBezierCurve（二维二次贝塞尔曲线）、QuadraticBezierCurve（二维二次贝塞尔曲线）
+      *     3D：LineCurve3（直线）、CatmullRomCurve3（三维样条曲线）、
+      *         CubicBezierCurve（三维三次贝塞尔曲线）、CubicBezierCurve3（三维三次贝塞尔曲线）——————就是比二维多了个维度
+      */
+
+      // 椭圆
+      const arc = new THREE.EllipseCurve(0, 0, 10, 5); // 参数1和2表示椭圆中心坐标  参数3和4表示x和y方向半径
+      const pointsArr = arc.getPoints(50); //分段数50，返回51个顶点（getPoints考虑曲线斜率变化，变化越快返回顶点越密集，getSpacedPoints是按照曲线长度等间距返回顶点数据）
+      const geometry = new THREE.BufferGeometry();
+      geometry.setFromPoints(pointsArr); //把数组pointsArr里面的坐标数据提取出来，赋值给geometry.attributes.position属性
+      const material = new THREE.PointsMaterial({// 点材质
+        color: 0xffff00,
+        size: 1.0 //点对象像素尺寸
+      });
+      const points = new THREE.Points(geometry, material);// 点模型
+      scene.add(points);
+
+      // 圆
+      // ArcCurve( aX = 圆心坐标, aY = 圆心坐标, aRadius = 圆弧半径, aStartAngle = 弧线开始角度（X正半轴起）, aEndAngle = 弧线结束角度（X正半轴起）, aClockwise = 是否顺时针绘制，默认false)
+      const arc1 = new THREE.ArcCurve(0, 20, 10, 0, Math.PI, true);
+      const pointsArr1 = arc1.getPoints(50);
+      const geometry1 = new THREE.BufferGeometry();
+      geometry1.setFromPoints(pointsArr1);
+      const material1 = new THREE.LineBasicMaterial({// 线材质
+        color: 0x00fffff
+      });
+      const line1 = new THREE.Line(geometry1, material1);// 线模型
+      scene.add(line1);
+
+      // 三维样条曲线（或贝塞尔曲线）表达不规则曲线
+      const arr2 = [
+        new THREE.Vector3(-25, 10, 45), // 三维向量Vector3创建一组顶点坐标
+        new THREE.Vector3(-5, 20, 20),
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(30, -15, 0),
+        new THREE.Vector3(35, 0, 40)
+      ]
+      const curve = new THREE.CatmullRomCurve3(arr2);// 三维样条曲线
+      const pointsArr2 = curve.getPoints(100);
+      const geometry2 = new THREE.BufferGeometry();
+      geometry2.setFromPoints(pointsArr2);
+      const material2 = new THREE.LineBasicMaterial({
+        color: 0x00fffff
+      });
+      const line2 = new THREE.Line(geometry2, material2);
+      scene.add(line2);
+
+      const arr3 = [// 三维向量Vector3创建一组顶点坐标
+        new THREE.Vector3(30, 40, 20),
+        new THREE.Vector3(20, -60, -60),
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(10, -40, -40),
+        new THREE.Vector3(50, -20, -40),
+      ]
+      const curve3 = new THREE.CatmullRomCurve3(arr3);// 三维样条曲线
+
+      const pointsArr3 = curve3.getPoints(100);
+      const geometry3 = new THREE.BufferGeometry();
+      geometry3.setFromPoints(pointsArr3);
+      const material3 = new THREE.PointsMaterial({
+        color: 0x00fffff
+      });
+      const line3 = new THREE.Points(geometry3, material3);
+      scene.add(line3);
+
+      // 贝塞尔曲线
+      const p1 = new THREE.Vector3(-40, -20, 0); // p1、p4是曲线起始点，p2、p3是曲线的控制点
+      const p2 = new THREE.Vector3(-20, 25, 0);
+      const p3 = new THREE.Vector3(25, 25, 0);
+      const p4 = new THREE.Vector3(20, 0, -50);
+      const curve4 = new THREE.CubicBezierCurve3(p1, p2, p3, p4);// 三维三次贝赛尔曲线
+
+      const pointsArr4 = curve4.getPoints(100);
+      const geometry4 = new THREE.BufferGeometry();
+      geometry4.setFromPoints(pointsArr4);
+      const material4 = new THREE.LineBasicMaterial({ color: 0x00fffff });
+      const line4 = new THREE.Line(geometry4, material4);
+      scene.add(line4);
+
+      // 三维三次贝赛尔曲线实现飞线轨迹
+      const pp1 = new THREE.Vector3(-50, 0, -50); // 轨迹起点
+      const pp3 = new THREE.Vector3(50, 0, 50); // 轨迹终点
+      const x2 = (pp1.x + pp3.x) / 2;
+      const z2 = (pp1.z + pp3.z) / 2;
+      const h = 100;
+      const pp2 = new THREE.Vector3(x2, h, z2);  // 计算得到pp1和pp3的中点坐标
+      const curve5 = new THREE.QuadraticBezierCurve3(pp1, pp2, pp3);
+
+      const pointsArr5 = curve5.getPoints(100);
+      const geometry5 = new THREE.BufferGeometry();
+      geometry5.setFromPoints(pointsArr5);
+      const material5 = new THREE.LineBasicMaterial({ color: 0x00fffff });
+      const line5 = new THREE.Line(geometry5, material5);
+      scene.add(line5);
+
+
+      /********************************创建模型-结束********************************/
+
+
+      // 添加平行光
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+      dirLight.position.set(5, 10, 5);
+      scene.add(dirLight);
+
+      // 添加辅助坐标系
+      const axesHelper = new THREE.AxesHelper(50);
+      axesHelper.layers.enableAll();
+      scene.add(axesHelper);
+
+      // 添加地面网格并设置颜色
+      const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x888888);
+      scene.add(gridHelper);
+
+
+      // 创建WebGL渲染器
+      renderer = new THREE.WebGLRenderer();
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // 创建轨道控制器（控制相机,改变相机参数）
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.minDistance = 5;
+      controls.maxDistance = 100;
+      controls.target.set(0, 0, 0); //与lookAt参数保持一致
+      controls.update();//update()函数内会执行camera.lookAt(controls.targe)
+
+      // 执行渲染操作
+      renderer.render(scene, camera);
+
+      window.addEventListener('resize', onWindowResize);
+
+      initGui();
+    }
+
+
+    function onWindowResize () {
+
+      camera.aspect = window.innerWidth / window.innerHeight;
+
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+    }
+
+    // 执行渲染循环
+    function animate () {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+
+    }
+
+    function initGui () {
+
+      gui = new GUI();
+
+      gui.title('初始化GUI');
+
+      // gui.add(layers, 'Toggle Name');
+      // ...
+
+      gui.open();
+
+    }
+
+
+  </script>
+</body>
+
+</html>
