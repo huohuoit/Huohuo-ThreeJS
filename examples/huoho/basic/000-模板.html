@@ -61,16 +61,17 @@
       // mesh.position.set(0, 0, 0);
       scene.add(mesh);
 
-      // 添加平行光
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-      dirLight.position.set(5, 10, 5);
-      scene.add(dirLight);
-
 
       
       /********************************创建模型-结束********************************/
 
 
+
+      // 添加平行光
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+      dirLight.position.set(5, 10, 5);
+      scene.add(dirLight);
+      
       // 添加辅助坐标系
       const axesHelper = new THREE.AxesHelper(50);
       axesHelper.layers.enableAll();

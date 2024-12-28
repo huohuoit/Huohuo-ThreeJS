@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      overflow: hidden;
+      margin: 0px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- <div id="webgl"></div> -->
+  <script type="importmap">
+          {
+          "imports": {
+            "three": "../../../build/three.module.js",
+            "three/addons/": "../../jsm/"
+          }
+          }
+  		</script>
+  <script type="module">
+    import * as THREE from '../../../build/three.module.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+    let gui;
+
+    let camera, scene, renderer;
+
+    init();
+    animate();
+
+    function init () {
+      // 创建相机
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+      camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
+      camera.lookAt(0, 0, 0);
+
+      // 创建场景
+      scene = new THREE.Scene();
+
+
+      /********************************创建模型-开始********************************/
+
+
+      /*
+      * 1、旋转生成几何体
+      *     API：LatheGeometry(
+      *          points = Vector2表示的坐标数据组成的数组, 
+      *          segments = 圆周方向细分数，默认12, 
+      *          phiStart = 开始角度，默认0, 
+      *          phiLength = 旋转角度，默认2π
+      *          )
+      */
+
+      const curve = new THREE.SplineCurve([ //通过二维样条曲线SplineCurve生成一个光滑的曲线旋转轮廓
+        new THREE.Vector2(15, 20),
+        new THREE.Vector2(6, 0),
+        new THREE.Vector2(15, -20)
+      ]);
+      const pointsArr = curve.getPoints(50);
+
+      const geometry = new THREE.LatheGeometry(pointsArr, 30);
+      const material = new THREE.MeshPhongMaterial({
+        color: 0xff0000,
+        transparent: true,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+
+      // 来个颜色渐变效果（山脉地形高度可视化的颜色渐变也是基于此，即获取顶点坐标，排序，计算高度比，设置颜色）
+      const pos = geometry.attributes.position;
+      const count = pos.count; //顶点数量
+      // 计算每个顶点的颜色值
+      const colorsArr = [];
+      // 根据顶点距离起点远近进行颜色插值计算
+      const c1 = new THREE.Color(0x00ffff); //曲线起点颜色 青色
+      const c2 = new THREE.Color(0xffff00); //曲线结束点颜色 黄色
+      for (let i = 0; i < count; i++) {
+        const percent = i / count; //点索引值相对所有点数量的百分比
+        //根据顶点位置顺序大小设置颜色渐变
+        const c = c1.clone().lerp(c2, percent);//颜色插值计算
+        colorsArr.push(c.r, c.g, c.b);
+      }
+      //类型数组创建顶点颜色color数据
+      const colors = new Float32Array(colorsArr);
+      // 设置几何体attributes属性的颜色color属性
+      geometry.attributes.color = new THREE.BufferAttribute(colors, 3); 
+      const materialColor = new THREE.LineBasicMaterial({
+        vertexColors: true, //使用顶点颜色渲染
+      });
+      const line = new THREE.Line(geometry, materialColor);
+      mesh.add(line);
+
+      scene.add(mesh);
+
+      /* 
+      * 2、轮廓填充生成几何体
+      */
+
+      // const pointsArr = [
+      //   new THREE.Vector2(-50, -50),
+      //   new THREE.Vector2(-60, 0),
+      //   new THREE.Vector2(0, 50),
+      //   new THREE.Vector2(60, 0),
+      //   new THREE.Vector2(50, -50),
+      // ]
+      // const shape = new THREE.Shape(pointsArr); // Shape的父类是Path(含直线、圆弧、曲线)
+      // const shapeGeometry = new THREE.ShapeGeometry(shape);
+      // const shapeMaterial = new THREE.MeshLambertMaterial({
+      //   color: 0x00ff00,
+      //   wireframe: true,
+      // });
+      // const shapeMesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
+      // scene.add(shapeMesh);
+
+      /*
+      * 3、拉伸生成几何体
+      */
+
+      // // Shape表示一个平面多边形轮廓
+      // const shape = new THREE.Shape([
+      //   // 按照特定顺序，依次书写多边形顶点坐标
+      //   new THREE.Vector2(-10, -10), //多边形起点
+      //   new THREE.Vector2(-10, 10),
+      //   new THREE.Vector2(10, 10),
+      //   new THREE.Vector2(10, -10),
+      // ]);
+      // //拉伸造型
+      // const geometry = new THREE.ExtrudeGeometry(
+      //   shape, //二维轮廓
+      //   {
+      //     depth: 20,
+      //     bevelThickness: 5, //倒角尺寸:拉伸方向
+      //     bevelSize: 5, //倒角尺寸:垂直拉伸方向
+      //     bevelSegments: 20, //倒圆角：倒角细分精度，默认3
+      //     bevelEnabled: false, //禁止倒角,默认tru
+      //   }
+      // );
+      // const material = new THREE.MeshLambertMaterial({
+      //   color: 0x00ff00,
+      //   // wireframe: true,
+      // });
+      // const mesh = new THREE.Mesh(geometry, material);
+      // scene.add(mesh);
+
+      /*
+      * 4、扫描生成几何体
+      */
+
+      // // 扫描轮廓：Shape表示一个平面多边形轮廓
+      // const shape = new THREE.Shape([
+      //   // 按照特定顺序，依次书写多边形顶点坐标
+      //   new THREE.Vector2(0, 0), //多边形起点，且是默认值
+      //   new THREE.Vector2(0, 10),
+      //   new THREE.Vector2(10, 10),
+      //   new THREE.Vector2(10, 0),
+      // ]);
+      // // 扫描轨迹：创建轮廓的扫描轨迹(3D样条曲线)
+      // const curve = new THREE.CatmullRomCurve3([
+      //   new THREE.Vector3(-10, -50, -50),
+      //   new THREE.Vector3(10, 0, 0),
+      //   new THREE.Vector3(8, 50, 50),
+      //   new THREE.Vector3(-5, 0, 100)
+      // ]);
+      // //扫描造型：扫描默认没有倒角
+      // const geometry = new THREE.ExtrudeGeometry(
+      //   shape, //扫描轮廓
+      //   {
+      //     extrudePath: curve,//扫描轨迹
+      //     steps: 100//沿着路径细分精度，越大越光滑
+      //   }
+      // );
+      // const material = new THREE.MeshLambertMaterial({
+      //   color: 0x00ff00,
+      //   // wireframe: true,
+      // });
+      // const mesh = new THREE.Mesh(geometry, material);
+      // scene.add(mesh);
+
+      /* 
+      * 5、内孔多边形
+      */
+
+      // const shape = new THREE.Shape();
+      // // .lineTo(25, 0)绘制直线线段，线段起点：.currentPoint，线段结束点：(100,0)
+      // shape.lineTo(25, 0);
+      // shape.lineTo(25, 25);
+      // shape.lineTo(0, 25);
+      // // Shape内孔轮廓
+      // const path1 = new THREE.Path();// 圆孔1
+      // path1.absarc(5, 5, 2);
+      // const path2 = new THREE.Path();// 圆孔2
+      // path2.absarc(20, 5, 2);
+      // const path3 = new THREE.Path();// 方形孔
+      // path3.moveTo(15, 15);
+      // path3.lineTo(20, 15);
+      // path3.lineTo(20, 20);
+      // path3.lineTo(15, 20);
+      // //三个内孔轮廓分别插入到holes属性中
+      // shape.holes.push(path1, path2, path3);
+      // const shapeGeometry = new THREE.ExtrudeGeometry(shape, {
+      //   depth: 10,//拉伸长度
+      //   bevelEnabled: false,//禁止倒角
+      //   curveSegments: 50,
+      // });
+      // const shapeMaterial = new THREE.MeshLambertMaterial({
+      //   color: 0x00ff00,
+      //   wireframe: true,
+      // });
+      // const shapeMesh = new THREE.Mesh(shapeGeometry, shapeMaterial);
+      // scene.add(shapeMesh);
+
+
+      /* 
+      * 6、模型边界线
+      *     先用EdgesGeometry重新计算几何体，返回一个新的几何体
+      *     然后用线模型LineSegments模型渲染新的几何体即可
+      */
+
+      // const geometry = new THREE.CylinderGeometry(30, 30, 50, 15);
+      // const material  = new THREE.MeshLambertMaterial({
+      //   color: 0x004444,
+      //   transparent: true,
+      //   opacity: 0.5,
+      // });
+      // const mesh = new THREE.Mesh(geometry, material);
+
+      // const edges = new THREE.EdgesGeometry(geometry, 30);// 相邻面法线夹角大于30度，才会显示线条
+      // const edgesMaterial = new THREE.LineBasicMaterial({
+      //   color: 0x00ffff,
+      // })
+      // const line = new THREE.LineSegments(edges, edgesMaterial);
+      // mesh.add(line);
+
+      // scene.add(mesh);
+
+
+
+      /********************************创建模型-结束********************************/
+
+
+      // 添加平行光
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+      dirLight.position.set(5, 10, 5);
+      scene.add(dirLight);
+
+      // 添加辅助坐标系
+      const axesHelper = new THREE.AxesHelper(50);
+      axesHelper.layers.enableAll();
+      scene.add(axesHelper);
+
+      // 添加地面网格并设置颜色
+      const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x888888);
+      scene.add(gridHelper);
+
+
+      // 创建WebGL渲染器
+      renderer = new THREE.WebGLRenderer();
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // 创建轨道控制器（控制相机,改变相机参数）
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.minDistance = 5;
+      controls.maxDistance = 100;
+      controls.target.set(0, 0, 0); //与lookAt参数保持一致
+      controls.update();//update()函数内会执行camera.lookAt(controls.targe)
+
+      // 执行渲染操作
+      renderer.render(scene, camera);
+
+      window.addEventListener('resize', onWindowResize);
+
+      initGui();
+    }
+
+
+    function onWindowResize () {
+
+      camera.aspect = window.innerWidth / window.innerHeight;
+
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+    }
+
+    // 执行渲染循环
+    function animate () {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+
+    }
+
+    function initGui () {
+
+      gui = new GUI();
+
+      gui.title('初始化GUI');
+
+      // gui.add(layers, 'Toggle Name');
+      // ...
+
+      gui.open();
+
+    }
+
+
+  </script>
+</body>
+
+</html>
