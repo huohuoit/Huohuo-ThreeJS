@@ -2,21 +2,21 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>test</title>
-  <link type="text/css" rel="stylesheet" href="../../main.css">
-  <style>
-    body {
-      overflow: hidden;
-      margin: 0px;
-    }
-  </style>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>test</title>
+	<link type="text/css" rel="stylesheet" href="../../main.css">
+	<style>
+		body {
+			overflow: hidden;
+			margin: 0px;
+		}
+	</style>
 </head>
 
 <body>
-  <div id="webgl"></div>
-  <script type="importmap">
+	<div id="webgl"></div>
+	<script type="importmap">
 					{
 						"imports": {
 							"three": "../../../build/three.module.js",
@@ -24,117 +24,132 @@
 						}
 					}
 	</script>
-  <script type="module">
-    // ES6语法，import方式引入js文件
-    import * as THREE from '../../../build/three.module.js';
-    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+	<script type="module">
+		// ES6语法，import方式引入js文件
+		import * as THREE from '../../../build/three.module.js';
+		import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-    // 1、创建三维场景
-    const scene = new THREE.Scene();
-    // 模型对象
-    const geometry = new THREE.BoxGeometry(50, 50, 50);// 设置几何体长宽高，也就是x、y、z三个方向的尺寸
-    // 基础网格材质MeshBasicMaterial不会受到光照影响
-    // const material = new THREE.MeshBasicMaterial({
-    // 	color: 0x0000ff, //设置材质颜色
-    // 	transparent: true,//开启透明
-    // 	opacity: 0.5,//设置透明度
-    // });
+		// 1、创建三维场景
+		const scene = new THREE.Scene();
+		// 模型对象
+		const geometry = new THREE.BoxGeometry(50, 50, 50);// 设置几何体长宽高，也就是x、y、z三个方向的尺寸
+		// 基础网格材质MeshBasicMaterial不会受到光照影响
+		// const material = new THREE.MeshBasicMaterial({
+		// 	color: 0x0000ff, //设置材质颜色
+		// 	transparent: true,//开启透明
+		// 	opacity: 0.5,//设置透明度
+		// });
+<<<<<<< HEAD
+<<<<<<< HEAD
 
-    // 漫反射网格材质MeshLambertMaterial(opens new window)会受到光照影响
-    // 镜面反射网格材质MeshPhongMaterial(opens new window)会受到光照影响
-    // 还有物理材质MeshPhysicalMaterial、标准材质MeshStandardMaterial会受到光照影响
-    // 还有MeshToonMaterial、MeshMatcapMaterial、MeshDepthMaterial、MeshNormalMaterial
+=======
+>>>>>>> c08f10fd2e (feat：几何体基础)
+=======
+
+>>>>>>> 2e692bd4c2 (feat: 模型对象材质)
+		// 漫反射网格材质MeshLambertMaterial(opens new window)会受到光照影响
+		// 镜面反射网格材质MeshPhongMaterial(opens new window)会受到光照影响
+		// 还有物理材质MeshPhysicalMaterial、标准材质MeshStandardMaterial会受到光照影响
+		// 还有MeshToonMaterial、MeshMatcapMaterial、MeshDepthMaterial、MeshNormalMaterial
+<<<<<<< HEAD
+<<<<<<< HEAD
 
     // 注：使用受光照影响的材质，几何体Geometry需要定义顶点法线数据
-    const material = new THREE.MeshLambertMaterial({
-      color: '#F77234', //设置材质颜色
-      transparent: true,//开启透明
-      opacity: 0.5,//设置透明度
-    });
+=======
+>>>>>>> c08f10fd2e (feat：几何体基础)
+=======
 
-    // 创建模型
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(0, 0, 0);// 设置模型mesh的xyz坐标
-    scene.add(mesh);//模型添加到场景中
-    const axesHelper = new THREE.AxesHelper(250);// AxesHelper：辅助观察的坐标系
-    scene.add(axesHelper);//辅助坐标线添加到场景中
-    // 设置画布尺寸
-    const width = 800;
-    const height = 500;
-    // const width = window.innerWidth;
-    // const height = window.innerHeight;
+    // 注：使用受光照影响的材质，几何体Geometry需要定义顶点法线数据
+>>>>>>> 2e692bd4c2 (feat: 模型对象材质)
+		const material = new THREE.MeshLambertMaterial({
+			color: '#F77234', //设置材质颜色
+			transparent: true,//开启透明
+			opacity: 0.5,//设置透明度
+		});
 
-    //创建点光源
-    const pointLight = new THREE.PointLight(0xffffff, 1.0);
-    pointLight.intensity = 1.0; // 降低光照强度到合理值
-    pointLight.position.set(100, 100, 100);//点光源位置 放在x轴上
-    scene.add(pointLight);//点光源添加到场景中
-    // 光源辅助观察
-    const pointLightHelper = new THREE.PointLightHelper(pointLight, 10);
-    scene.add(pointLightHelper);
+		// 创建模型
+		const mesh = new THREE.Mesh(geometry, material);
+		mesh.position.set(0, 0, 0);// 设置模型mesh的xyz坐标
+		scene.add(mesh);//模型添加到场景中
+		const axesHelper = new THREE.AxesHelper(250);// AxesHelper：辅助观察的坐标系
+		scene.add(axesHelper);//辅助坐标线添加到场景中
+		// 设置画布尺寸
+		const width = 800;
+		const height = 500;
+		// const width = window.innerWidth;
+		// const height = window.innerHeight;
 
-    // 添加环境光
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
+		//创建点光源
+		const pointLight = new THREE.PointLight(0xffffff, 1.0);
+		pointLight.intensity = 1.0; // 降低光照强度到合理值
+		pointLight.position.set(100, 100, 100);//点光源位置 放在x轴上
+		scene.add(pointLight);//点光源添加到场景中
+		// 光源辅助观察
+		const pointLightHelper = new THREE.PointLightHelper(pointLight, 10);
+		scene.add(pointLightHelper);
 
-    // 平行光
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    // 设置光源的方向：通过光源position属性和目标指向对象的position属性计算
-    directionalLight.position.set(0, 100, 0);
-    // 方向光指向对象网格模型mesh，可以不设置，默认的位置是0,0,0
-    directionalLight.target = mesh;// directionalLight.target默认指向坐标原点
-    scene.add(directionalLight);
-    // DirectionalLightHelper：可视化平行光
-    const dirLightHelper = new THREE.DirectionalLightHelper(directionalLight, 5, 0xff0000);
-    scene.add(dirLightHelper);
+		// 添加环境光
+		const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+		scene.add(ambientLight);
+
+		// 平行光
+		const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+		// 设置光源的方向：通过光源position属性和目标指向对象的position属性计算
+		directionalLight.position.set(0, 100, 0);
+		// 方向光指向对象网格模型mesh，可以不设置，默认的位置是0,0,0
+		directionalLight.target = mesh;// directionalLight.target默认指向坐标原点
+		scene.add(directionalLight);
+		// DirectionalLightHelper：可视化平行光
+		const dirLightHelper = new THREE.DirectionalLightHelper(directionalLight, 5, 0xff0000);
+		scene.add(dirLightHelper);
 
 
-    // 2、创建相机
-    const camera = new THREE.PerspectiveCamera(30, width / height, 1, 3000);
-    camera.position.set(292, 223, 185);
-    camera.lookAt(0, 0, 0);
+		// 2、创建相机
+		const camera = new THREE.PerspectiveCamera(30, width / height, 1, 3000);
+		camera.position.set(292, 223, 185);
+		camera.lookAt(0, 0, 0);
 
 
-    // 3、创建WebGL渲染器
-    const renderer = new THREE.WebGLRenderer();
-    renderer.setSize(width, height);
-    // renderer.render(scene, camera); // 作了渲染循环，就不需要了
-    //three.js执行渲染命令会输出一个canvas画布(HTML元素)，你可以插入到web页面中
-    document.body.appendChild(renderer.domElement);
+		// 3、创建WebGL渲染器
+		const renderer = new THREE.WebGLRenderer();
+		renderer.setSize(width, height);
+		// renderer.render(scene, camera); // 作了渲染循环，就不需要了
+		//three.js执行渲染命令会输出一个canvas画布(HTML元素)，你可以插入到web页面中
+		document.body.appendChild(renderer.domElement);
 
-    // 其他操作
+		// 其他操作
 
-    // 设置相机控件轨道控制器OrbitControls（// 作了渲染循环，就不需要了）
-    const controls = new OrbitControls(camera, renderer.domElement);
-    // 如果OrbitControls改变了相机参数，重新调用渲染器渲染三维场景
-    controls.addEventListener('change', function () {
-      renderer.render(scene, camera); //执行渲染操作
-    });//监听鼠标、键盘事件
+		// 设置相机控件轨道控制器OrbitControls（// 作了渲染循环，就不需要了）
+		const controls = new OrbitControls(camera, renderer.domElement);
+		// 如果OrbitControls改变了相机参数，重新调用渲染器渲染三维场景
+		controls.addEventListener('change', function () {
+			renderer.render(scene, camera); //执行渲染操作
+		});//监听鼠标、键盘事件
 
-    // 动画渲染循环
-    // const clock = new THREE.Clock();
-    function animate () {
-      // const spt = clock.getDelta() * 1000;//毫秒
-      // console.log('两帧渲染时间间隔(毫秒)', spt);
-      // console.log('帧率FPS', 1000 / spt);
-      renderer.render(scene, camera); //执行渲染操作
-      mesh.rotateY(0.01);//每次绕y轴旋转0.01弧度
-      requestAnimationFrame(animate);//请求再次执行渲染函数render，渲染下一帧
-    }
-    animate();
+		// 动画渲染循环
+		// const clock = new THREE.Clock();
+		function animate() {
+			// const spt = clock.getDelta() * 1000;//毫秒
+			// console.log('两帧渲染时间间隔(毫秒)', spt);
+			// console.log('帧率FPS', 1000 / spt);
+			renderer.render(scene, camera); //执行渲染操作
+			mesh.rotateY(0.01);//每次绕y轴旋转0.01弧度
+			requestAnimationFrame(animate);//请求再次执行渲染函数render，渲染下一帧
+		}
+		animate();
 
-    // onresize 事件会在窗口被调整大小时发生
-    window.onresize = function () {
-      // 重置渲染器输出画布canvas尺寸
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      // 全屏情况下：设置观察范围长宽比aspect为窗口宽高比
-      camera.aspect = window.innerWidth / window.innerHeight;
-      // 渲染器执行render方法的时候会读取相机对象的投影矩阵属性projectionMatrix
-      // 但是不会每渲染一帧，就通过相机的属性计算投影矩阵(节约计算资源)
-      // 如果相机的一些属性发生了变化，需要执行updateProjectionMatrix ()方法更新相机的投影矩阵
-      camera.updateProjectionMatrix();
-    };
-  </script>
+		// onresize 事件会在窗口被调整大小时发生
+		window.onresize = function () {
+			// 重置渲染器输出画布canvas尺寸
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			// 全屏情况下：设置观察范围长宽比aspect为窗口宽高比
+			camera.aspect = window.innerWidth / window.innerHeight;
+			// 渲染器执行render方法的时候会读取相机对象的投影矩阵属性projectionMatrix
+			// 但是不会每渲染一帧，就通过相机的属性计算投影矩阵(节约计算资源)
+			// 如果相机的一些属性发生了变化，需要执行updateProjectionMatrix ()方法更新相机的投影矩阵
+			camera.updateProjectionMatrix();
+		};
+	</script>
 </body>
 
 </html>
