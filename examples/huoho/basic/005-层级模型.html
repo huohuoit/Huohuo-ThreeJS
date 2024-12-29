@@ -45,10 +45,6 @@
       // 创建场景
       scene = new THREE.Scene();
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> b8c4955332 (feat: 完成层级模型案例)
       // 创建模型（简单案例） 核心：Threejs层级模型就是一个树结构
       // const geometry = new THREE.BoxGeometry(20, 20, 20);
       // const material = new THREE.MeshLambertMaterial({ color: 0x00ffff });
@@ -114,7 +110,6 @@
         if (obj.isMesh) {//判断条件也可以是obj.type === 'Mesh'
           obj.material.color.set(0xffff00);
         }
-<<<<<<< HEAD
       });
 
       // 查询模型节点
@@ -124,13 +119,13 @@
       const nameNode3 = scene.getObjectByName("3号楼");
       nameNode.material.color.set(0xff0000);
       nameNode2.material.color.set('#F77234');
-      
+
       console.log('本地坐标', nameNode.position);// 本地坐标
       console.log('世界坐标', nameNode.getWorldPosition(new THREE.Vector3())); //世界坐标：模型自身.position和所有父对象.position累加的坐标
-      
+
       const axesHelper2 = new THREE.AxesHelper(50);
       nameNode.add(axesHelper2);// 给子对象添加一个局部坐标系
-      
+
       nameNode.geometry.translate(0, 0, 10);// 通过改变几何体顶点坐标，可以改变模型自身相对坐标原点的位置
       nameNode.geometry.rotateX(Math.PI / 2);
       // scene.remove(dirLight);//移除场景中平行光
@@ -141,7 +136,7 @@
       // nameNode.visible = true;// 使nameNode处于显示状态
       // nameNode.material.visible = false;// 隐藏该材质对应的模型
 
-      
+
       //用代码方式解决mesh共享材质问题
       // model.getObjectByName("洋房").traverse(function (obj) {
       //   if (obj.isMesh) {
@@ -151,80 +146,18 @@
       // });
       // nameNode1.material.color.set(0xffff00);
       // nameNode2.material.color.set(0x00ff00);
-<<<<<<< HEAD
-=======
-
->>>>>>> 50730c8295 (feat: 加载外部三维模型案例)
 
 
-=======
-      // 创建模型
-      const geometry = new THREE.BoxGeometry(5, 5, 5);
-      const material = new THREE.MeshPhongMaterial({
-        color: 0xff0000,
-        transparent: true,
-        opacity: 0.5,
-        // wireframe: true // 添加线框模式
-=======
->>>>>>> b8c4955332 (feat: 完成层级模型案例)
-      });
-      // 查询模型节点
-      const nameNode = scene.getObjectByName("4号楼");
-      const nameNode1 = scene.getObjectByName("1号楼");
-      const nameNode2 = scene.getObjectByName("2号楼");
-      const nameNode3 = scene.getObjectByName("3号楼");
-      nameNode.material.color.set(0xff0000);
-      nameNode2.material.color.set('#F77234');
-      
-<<<<<<< HEAD
->>>>>>> f0b00d2200 (feat: 添加案例模板)
-=======
-      console.log('本地坐标', nameNode.position);// 本地坐标
-      console.log('世界坐标', nameNode.getWorldPosition(new THREE.Vector3())); //世界坐标：模型自身.position和所有父对象.position累加的坐标
-      
-      const axesHelper2 = new THREE.AxesHelper(50);
-      nameNode.add(axesHelper2);// 给子对象添加一个局部坐标系
-      
-      nameNode.geometry.translate(0, 0, 10);// 通过改变几何体顶点坐标，可以改变模型自身相对坐标原点的位置
-      nameNode.geometry.rotateX(Math.PI / 2);
-      // scene.remove(dirLight);//移除场景中平行光
-      // scene.remove(mesh1);//移除场景中模型对象
-      group1.remove(nameNode1, nameNode3);//移除组对象中的多个网格模型
-      // nameNode.visible = false;// 隐藏一个网格模型，visible的默认值是true
-      // group2.visible = false;// 隐藏一个包含多个模型的组对象group
-      // nameNode.visible = true;// 使nameNode处于显示状态
-      // nameNode.material.visible = false;// 隐藏该材质对应的模型
-
-
->>>>>>> b8c4955332 (feat: 完成层级模型案例)
       // 添加平行光
       const dirLight = new THREE.DirectionalLight(0xffffff, 1);
       dirLight.position.set(5, 10, 5);
       scene.add(dirLight);
 
       // 添加辅助坐标系
-<<<<<<< HEAD
-<<<<<<< HEAD
       const axesHelper = new THREE.AxesHelper(500);
       axesHelper.layers.enableAll();
       scene.add(axesHelper);
 
-=======
-      const axesHelper = new THREE.AxesHelper(50);
-      axesHelper.layers.enableAll();
-      scene.add(axesHelper);
-
-      // 添加地面网格并设置颜色
-      const gridHelper = new THREE.GridHelper(100, 100, 0x444444, 0x888888);
-      scene.add(gridHelper);
-
->>>>>>> f0b00d2200 (feat: 添加案例模板)
-=======
-      const axesHelper = new THREE.AxesHelper(500);
-      axesHelper.layers.enableAll();
-      scene.add(axesHelper);
-
->>>>>>> b8c4955332 (feat: 完成层级模型案例)
 
       // 创建WebGL渲染器
       renderer = new THREE.WebGLRenderer();
@@ -234,15 +167,7 @@
 
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.minDistance = 5;
-<<<<<<< HEAD
-<<<<<<< HEAD
       controls.maxDistance = 500;
-=======
-      controls.maxDistance = 100;
->>>>>>> f0b00d2200 (feat: 添加案例模板)
-=======
-      controls.maxDistance = 500;
->>>>>>> b8c4955332 (feat: 完成层级模型案例)
 
       // 执行渲染操作
       renderer.render(scene, camera);
