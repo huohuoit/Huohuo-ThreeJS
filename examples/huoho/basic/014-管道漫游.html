@@ -33,17 +33,44 @@
 
     let camera, scene, renderer;
 
+    // 三维样条曲线
+    const path = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-50, 20, 90),
+      new THREE.Vector3(-10, 40, 40),
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(60, -60, 0),
+      new THREE.Vector3(90, -40, 60),
+      new THREE.Vector3(120, 30, 30),
+    ]);
+    // 从曲线上等间距获取一定数量点坐标
+    const pointsArr = path.getSpacedPoints(500);
+    // 渲染循环
+    let i = 0; //在渲染循环中累加变化
+
     init();
     animate();
 
     function init () {
+      /* 
+        相机：
+            OrthographicCamera（正投影相机）
+            PerspectiveCamera（透视投影相机——常用，模拟人眼视觉）
+            CubeCamera（立方相机）
+            Camera（基类）：matrixWorldInverse（视图矩阵）、projectionMatrix（投影矩阵）
+      */
+
       // 创建相机
-      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
-      camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
-      camera.lookAt(0, 0, 0);
+      // 参数：上下左右边界范围、画布宽高比、距离相机多远的位置开始渲染（默认0.1）、距离相机多远的位置停止渲染（默认2000）
+      // camera = new THREE.OrthographicCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+
+      // 正投影相机 ======》 明显就没有透视投影的好看了吧！
+      const width = window.innerWidth; //canvas画布宽度
+      const height = window.innerHeight; //canvas画布高度
+      const k = width / height; //canvas画布宽高比
+      const s = 40;//控制left, right, top, bottom范围大小
+      camera = new THREE.OrthographicCamera(-s * k, s * k, s, -s, 0.1, 200);
+
       camera.position.set(100, 100, 100);
-      camera.lookAt(0, 10, 0);
-      camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
       camera.lookAt(0, 0, 0);
 
       // 创建场景
@@ -53,18 +80,21 @@
       /********************************创建模型-开始********************************/
 
 
-      // 创建模型
-      const geometry = new THREE.BoxGeometry(5, 5, 5);
-      const material = new THREE.MeshPhongMaterial({
-        color: 0xff0000,
-        transparent: true,
-        opacity: 0.5,
-        // wireframe: true // 添加线框模式
+      // 样条曲线path作为TubeGeometry参数生成管道
+      const geometry = new THREE.TubeGeometry(path, 200, 5, 30);
+      const texLoader = new THREE.TextureLoader();
+      //纹理贴图
+      const texture = texLoader.load('./images/1.jpg');
+      //UV坐标U方向阵列模式
+      texture.wrapS = THREE.RepeatWrapping;
+      //纹理沿着管道方向阵列(UV坐标U方向)
+      texture.repeat.x = 10;
+      const material = new THREE.MeshLambertMaterial({
+        map: texture,
+        side: THREE.DoubleSide, //双面显示看到管道内壁
       });
       const mesh = new THREE.Mesh(geometry, material);
-      // mesh.position.set(0, 0, 0);
       scene.add(mesh);
-
 
       /********************************创建模型-结束********************************/
 
@@ -118,8 +148,19 @@
 
     // 执行渲染循环
     function animate () {
-      requestAnimationFrame(animate);
+      if (i < pointsArr.length - 1) {
+        // 相机位置设置在当前点位置
+        camera.position.copy(pointsArr[i]);
+        // 曲线上当前点pointsArr[i]和下一个点pointsArr[i+1]近似模拟当前点曲线切线
+        // 设置相机观察点为当前点的下一个点，相机视线和当前点曲线切线重合
+        camera.lookAt(pointsArr[i + 1]);
+        i += 1; //调节速度
+      } else {
+        i = 0
+      }
+
       renderer.render(scene, camera);
+      requestAnimationFrame(animate);
 
     }
 

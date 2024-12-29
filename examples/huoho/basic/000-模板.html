@@ -41,15 +41,11 @@
       camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
       camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
       camera.lookAt(0, 0, 0);
-      camera.position.set(100, 100, 100);
-      camera.lookAt(0, 10, 0);
-      camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
-      camera.lookAt(0, 0, 0);
 
       // 创建场景
       scene = new THREE.Scene();
 
-      
+
       /********************************创建模型-开始********************************/
 
 
@@ -65,7 +61,7 @@
       // mesh.position.set(0, 0, 0);
       scene.add(mesh);
 
-      
+
       /********************************创建模型-结束********************************/
 
 
@@ -118,8 +114,8 @@
 
     // 执行渲染循环
     function animate () {
-      requestAnimationFrame(animate);
       renderer.render(scene, camera);
+      requestAnimationFrame(animate);
 
     }
 
