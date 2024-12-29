@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      overflow: hidden;
+      margin: 0px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- <div id="webgl"></div> -->
+  <script type="importmap">
+          {
+          "imports": {
+            "three": "../../../build/three.module.js",
+            "three/addons/": "../../jsm/"
+          }
+          }
+  		</script>
+  <script type="module">
+    import * as THREE from '../../../build/three.module.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+    let gui;
+
+    let camera, scene, renderer;
+
+    init();
+    animate();
+
+    function init () {
+      // 创建相机
+      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+      camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
+      camera.lookAt(0, 0, 0);
+
+      // 创建场景
+      scene = new THREE.Scene();
+
+
+      /********************************创建模型-开始********************************/
+
+
+      // 创建模型
+      const geometry = new THREE.BoxGeometry(5, 5, 5);
+      const material = new THREE.MeshPhongMaterial({
+        color: 0xff0000,
+        transparent: true,
+        opacity: 0.5,
+        // wireframe: true // 添加线框模式
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      // 设置产生投影的网格模型
+      mesh.castShadow = true;
+      // mesh.position.set(0, 0, 0);
+      scene.add(mesh);
+
+      // 在创建模型部分添加一个接收阴影的平面
+      const planeGeometry = new THREE.PlaneGeometry(50, 50);
+      const planeMaterial = new THREE.MeshPhongMaterial({ color: 0xcccccc });
+      const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+      plane.rotation.x = -Math.PI / 2; // 使平面水平
+      plane.position.y = -2; // 略微下移平面位置
+      plane.receiveShadow = true; // 设置平面接收阴影
+      scene.add(plane);
+
+
+      /********************************创建模型-结束********************************/
+
+
+      /* 
+        光源：
+            AmbientLight（环境光）：没有方向，不会产生阴影
+            PointLight（点光源）
+            DirectionalLight（平行光）
+            SpotLight（聚光灯光源）
+      */
+
+      // 创建聚光源
+      // const spotLight = new THREE.SpotLight(0xffffff, 1.0); // 光源颜色、光照强度
+      // spotLight.intensity = 1.0; // 光照强度也可以这么设置
+      // // 设置聚光光源发散角度
+      // spotLight.angle = Math.PI / 6;//光锥角度的二分之一
+      // spotLight.decay = 0.0;//设置光源不随距离衰减（默认2.0，有时候你可能看不到光源效果）
+      // spotLight.position.set(5, 10, 5);
+      // spotLight.target.position.set(0, 0, 0); // 聚光源目标对象（默认坐标原点）
+      // //spotLight.target添加到场景中.target.position才会起作用
+      // scene.add(spotLight.target);
+      // scene.add(spotLight);
+      // // 聚光源辅助对象，可视化聚光源
+      // const spotLightHelper = new THREE.SpotLightHelper(spotLight, 0xffffff)
+      // scene.add(spotLightHelper);
+
+      /* 
+        创建平行光阴影：
+            1、.castShadow 设置产生阴影的模型对象
+            2、.castShadow 设置产生阴影的光源对象
+            3、.receiveShadow 设置接收阴影效果的模型
+            4、.shadowMap.enabledWebGl 渲染器允许阴影渲染
+            5、.shadow.camera 设置光源阴影渲染范围
+      */
+
+      // 创建平行光
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0);
+      directionalLight.position.set(20, 20, 20); // 调整光源位置
+      directionalLight.castShadow = true;
+      // 设置阴影贴图的分辨率
+      directionalLight.shadow.mapSize.width = 1024;
+      directionalLight.shadow.mapSize.height = 1024;
+      // 设置平行光的阴影相机参数
+      directionalLight.shadow.camera.near = 0.5;
+      directionalLight.shadow.camera.far = 100;
+      directionalLight.shadow.camera.left = -25;
+      directionalLight.shadow.camera.right = 25;
+      directionalLight.shadow.camera.top = 25;
+      directionalLight.shadow.camera.bottom = -25;
+      scene.add(directionalLight);
+      // 可视化平行光阴影对应的正投影相机对象
+      const cameraHelper = new THREE.CameraHelper(directionalLight.shadow.camera);
+      scene.add(cameraHelper);
+
+      // 添加环境光
+      const ambientLight = new THREE.AmbientLight(0x404040);
+      scene.add(ambientLight);
+
+      // 添加辅助坐标系
+      const axesHelper = new THREE.AxesHelper(50);
+      axesHelper.layers.enableAll();
+      scene.add(axesHelper);
+
+      // 添加地面网格并设置颜色
+      const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x888888);
+      scene.add(gridHelper);
+
+
+      // 创建WebGL渲染器
+      renderer = new THREE.WebGLRenderer();
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      
+      // 在渲染器设置部分添加
+      renderer.shadowMap.enabled = true; // 开启阴影渲染
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap; // 使用PCFSoft阴影类型
+
+      document.body.appendChild(renderer.domElement);
+
+      // 创建轨道控制器（控制相机,改变相机参数）
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.minDistance = 5;
+      controls.maxDistance = 100;
+      controls.target.set(0, 0, 0); //与lookAt参数保持一致
+      controls.update();//update()函数内会执行camera.lookAt(controls.targe)
+
+      // 执行渲染操作
+      renderer.render(scene, camera);
+
+      window.addEventListener('resize', onWindowResize);
+
+      initGui();
+
+    }
+
+
+    function onWindowResize () {
+
+      camera.aspect = window.innerWidth / window.innerHeight;
+
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+    }
+
+    // 执行渲染循环
+    function animate () {
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+
+    }
+
+    function initGui () {
+
+      gui = new GUI();
+
+      gui.title('初始化GUI');
+
+      // gui.add(layers, 'Toggle Name');
+      // ...
+
+      // const lightFolder = gui.addFolder('平行光参数');
+      // lightFolder.add(directionalLight.position, 'x', -50, 50);
+      // lightFolder.add(directionalLight.position, 'y', 0, 50);
+      // lightFolder.add(directionalLight.position, 'z', -50, 50);
+      // lightFolder.add(directionalLight, 'intensity', 0, 2);
+      
+      gui.open();
+
+    }
+
+
+  </script>
+</body>
+
+</html>
