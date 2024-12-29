@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    body {
+      overflow: hidden;
+      margin: 0px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- <div id="webgl"></div> -->
+  <script type="importmap">
+          {
+          "imports": {
+            "three": "../../../build/three.module.js",
+            "three/addons/": "../../jsm/"
+          }
+          }
+  		</script>
+  <script type="module">
+    import * as THREE from '../../../build/three.module.js';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+    let gui;
+
+    let camera, scene, renderer;
+
+    init();
+    animate();
+
+    function init () {
+      // 创建相机
+      // near调整大一些，避免距离相机非常近的雨滴渲染非常大的现象
+      camera = new THREE.PerspectiveCamera(30, window.innerWidth / window.innerHeight, 50, 3000);
+      camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
+      camera.lookAt(0, 0, 0);
+
+      // 创建场景
+      scene = new THREE.Scene();
+
+
+      /********************************创建模型-开始********************************/
+
+
+      // 创建精灵模型（区别于网格模型对象，不需要创建几何体对象，形状是矩形）
+      const texture = new THREE.TextureLoader().load("./images/sprite.png");
+      const spriteMaterial = new THREE.SpriteMaterial({
+        color: 0x00ffff,
+        rotation: Math.PI / 4,//旋转精灵对象45度，弧度值
+        map: texture, //设置精灵纹理贴图
+        transparent: true,//SpriteMaterial默认是true
+      });
+      const sprite  = new THREE.Sprite(spriteMaterial);
+      // scene.add(sprite);
+
+      // 精灵模型模拟雨滴
+      const group = new THREE.Group();
+      for (let i = 0; i < 16000; i++) {
+        // 精灵模型共享材质
+        const sprite = new THREE.Sprite(spriteMaterial);
+        group.add(sprite);
+        sprite.scale.set(1, 1, 1);
+        // 设置精灵模型位置，在长方体空间上上随机分布
+        const x = 1000 * (Math.random() - 0.5);
+        const y = 600 * Math.random();
+        const z = 1000 * (Math.random() - 0.5);
+        sprite.position.set(x, y, z)
+      }
+      scene.add(group);
+
+      // 动画：周期性改变雨滴位置
+      const clock = new THREE.Clock();
+      function loop () {
+        // loop()两次执行时间间隔
+        const t = clock.getDelta();
+        group.children.forEach(sprite => {
+          // 雨滴的y坐标每次减t*60
+          sprite.position.y -= t * 60;
+          if (sprite.position.y < 0) {
+            // 如果雨滴落到地面，重置y，从新下落
+            sprite.position.y = 600;
+          }
+        });
+        requestAnimationFrame(loop);
+      }
+      loop();
+
+      /********************************创建模型-结束********************************/
+
+
+      // 添加平行光
+      const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+      dirLight.position.set(5, 10, 5);
+      scene.add(dirLight);
+
+      // 添加辅助坐标系
+      const axesHelper = new THREE.AxesHelper(50);
+      axesHelper.layers.enableAll();
+      scene.add(axesHelper);
+
+      // 添加地面网格并设置颜色
+      const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x888888);
+      scene.add(gridHelper);
+
+
+      // 创建WebGL渲染器
+      renderer = new THREE.WebGLRenderer();
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+
+      // 创建轨道控制器（控制相机,改变相机参数）
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.minDistance = 5;
+      controls.maxDistance = 100;
+      controls.target.set(0, 0, 0); //与lookAt参数保持一致
+      controls.update();//update()函数内会执行camera.lookAt(controls.targe)
+
+      // 执行渲染操作
+      renderer.render(scene, camera);
+
+      window.addEventListener('resize', onWindowResize);
+
+      initGui();
+    }
+
+
+    function onWindowResize () {
+
+      camera.aspect = window.innerWidth / window.innerHeight;
+
+      camera.updateProjectionMatrix();
+
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+    }
+
+    // 执行渲染循环
+    function animate () {
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+
+    }
+
+    function initGui () {
+
+      gui = new GUI();
+
+      gui.title('初始化GUI');
+
+      // gui.add(layers, 'Toggle Name');
+      // ...
+
+      gui.open();
+
+    }
+
+
+  </script>
+</body>
+
+</html>
