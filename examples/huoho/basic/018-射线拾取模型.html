@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Document</title>
+	<style>
+		body {
+			overflow: hidden;
+			margin: 0px;
+		}
+	</style>
+</head>
+
+<body>
+	<script type="importmap">
+			{
+				"imports": {
+					"three": "../../../build/three.module.js",
+					"three/addons/": "../../jsm/"
+				}
+			}
+	</script>
+	<script type="module">
+
+		/*
+			射线Ray：
+					OutlinePass.js：高亮发光描边
+					UnrealBloomPass.js：Bloom发光
+					GlitchPass.js：画面抖动效果
+		*/
+
+		import * as THREE from "../../../build/three.module.js";
+		import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+		import { GUI } from "three/addons/libs/lil-gui.module.min.js";
+
+		let gui;
+
+		let camera, scene, renderer;
+
+		init();
+		animate();
+
+		function init() {
+			// 创建相机
+			camera = new THREE.PerspectiveCamera(
+				45,
+				window.innerWidth / window.innerHeight,
+				0.1,
+				200
+			);
+			camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
+			camera.lookAt(0, 0, 0);
+
+			// 创建场景
+			scene = new THREE.Scene();
+
+			/********************************创建模型-开始********************************/
+
+			// 创建射线对象Ray
+			const ray = new THREE.Ray()
+			// 设置射线起点
+			ray.origin = new THREE.Vector3(1, 0, 3);
+			// 表示射线沿着x轴正方向
+			ray.direction = new THREE.Vector3(1, 0, 0); // 注意.direction的值需要是单位向量，不是的话可以执行.normalize()归一化或者说标准化
+			// 三角形三个点坐标
+			const p1 = new THREE.Vector3(100, 25, 0);
+			const p2 = new THREE.Vector3(100, -25, 25);
+			const p3 = new THREE.Vector3(100, -25, -25);
+			const point = new THREE.Vector3();//用来记录射线和三角形的交叉点
+			// `.intersectTriangle()`计算射线和三角形是否相交叉，相交返回交点，不相交返回null
+			const result = ray.intersectTriangle(p1, p2, p3, false, point); // 参数4表示是否进行背面剔除，p1,p2,p3可以理解为一个三角形，有正反两面
+			console.log('交叉点坐标', point);
+			console.log('查看是否相交', result);
+
+			// 创建射线拾取模型
+			const geometry = new THREE.SphereGeometry(10, 20, 20);
+			const material = new THREE.MeshLambertMaterial({
+				color: 0x009999,
+			});
+			const mesh1 = new THREE.Mesh(geometry, material);
+			const mesh2 = mesh1.clone();
+			mesh2.position.y = 30;
+			const mesh3 = mesh1.clone();
+			mesh3.position.x = 30;
+			const model = new THREE.Group();
+			model.add(mesh1, mesh2, mesh3); // 三个网格模型mesh1,mesh2,mesh3用于射线拾取测试
+			model.updateMatrixWorld(true); // 注意更新下模型的世界矩阵，你设置的mesh.position生效，再进行射线拾取计算
+			scene.add(model);
+
+			const raycaster = new THREE.Raycaster(); // 射线投射器Raycaster具有一个射线属性.ray（即射线对象）
+			raycaster.ray.origin = new THREE.Vector3(-10, 0, 0); // 设置射线起点
+			raycaster.ray.direction = new THREE.Vector3(1, 0, 0); // 设置射线方向射线方向沿着x轴
+			const intersects = raycaster.intersectObjects([mesh1, mesh2, mesh3]); // 射线发射拾取模型对象
+			console.log("射线器返回的对象", intersects);
+			if (intersects.length > 0) {
+				// 选中模型的第一个模型，设置为红色
+				intersects[0].object.material.color.set(0xff0000);
+			}
+
+
+			/********************************创建模型-结束********************************/
+
+			// 添加平行光
+			const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+			dirLight.position.set(5, 10, 5);
+			scene.add(dirLight);
+
+			// 添加辅助坐标系
+			const axesHelper = new THREE.AxesHelper(50);
+			axesHelper.layers.enableAll();
+			scene.add(axesHelper);
+
+			// 添加地面网格并设置颜色
+			const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x888888);
+			scene.add(gridHelper);
+
+			// 创建WebGL渲染器
+			renderer = new THREE.WebGLRenderer();
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+
+			// 创建轨道控制器（控制相机,改变相机参数）
+			const controls = new OrbitControls(camera, renderer.domElement);
+			controls.minDistance = 5;
+			controls.maxDistance = 100;
+			controls.target.set(0, 0, 0); //与lookAt参数保持一致
+			controls.update(); //update()函数内会执行camera.lookAt(controls.targe)
+
+			// 执行渲染操作
+			renderer.render(scene, camera);
+
+			window.addEventListener("resize", onWindowResize);
+
+			initGui();
+		}
+
+		function onWindowResize() {
+			camera.aspect = window.innerWidth / window.innerHeight;
+
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		}
+
+		// 执行渲染循环
+		function animate() {
+			renderer.render(scene, camera);
+			requestAnimationFrame(animate);
+		}
+
+		function initGui() {
+			gui = new GUI();
+
+			gui.title("初始化GUI");
+
+			// gui.add(layers, 'Toggle Name');
+			// ...
+
+			gui.open();
+		}
+	</script>
+</body>
+
+</html>
