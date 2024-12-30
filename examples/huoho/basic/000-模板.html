@@ -33,7 +33,6 @@
 		let camera, scene, renderer;
 
 		init();
-		animate();
 
 		function init() {
 			// 创建相机
@@ -113,6 +112,7 @@
 			renderer.render(scene, camera);
 			requestAnimationFrame(animate);
 		}
+    animate();
 
 		function initGui() {
 			gui = new GUI();
