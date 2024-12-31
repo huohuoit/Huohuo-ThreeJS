@@ -10,10 +10,18 @@
 			overflow: hidden;
 			margin: 0px;
 		}
+
+		/* 增加一个关闭按钮 */
+		#tag:hover {
+			cursor: pointer;
+		}
 	</style>
 </head>
 
 <body>
+	<div id="tag"
+		style="color: red; padding: 2px; background: rgba(255,255,255,0.8); border-radius: 2px; pointer-events: auto;">这是一个球
+	</div>
 	<script type="importmap">
 			{
 				"imports": {
@@ -32,16 +40,22 @@
 		*/
 
 		import * as THREE from "../../../build/three.module.js";
+		import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 		import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
 		import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'; // 引入后处理扩展库 EffectComposer.js
 		import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'; // 引入渲染器通道 RenderPass
 		import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js'; // 引入OutlinePass通道
 
-		import { GUI } from "three/addons/libs/lil-gui.module.min.js";
+		// 引入CSS2渲染器CSS2DRenderer和CSS2模型对象CSS2DObject
+		import {
+			CSS2DRenderer,
+			CSS2DObject,
+		} from "three/addons/renderers/CSS2DRenderer.js";
 
 		let gui;
 
-		let camera, scene, renderer, intersects;
+		let camera, scene, renderer, css2Renderer, intersects, chooseObj;
 
 		init();
 
@@ -62,35 +76,15 @@
 			/********************************创建模型-开始********************************/
 
 			/* 
-				射线对象Ray示例
-			*/
-
-			// 创建射线对象Ray
-			const ray = new THREE.Ray()
-			// 设置射线起点
-			ray.origin = new THREE.Vector3(1, 0, 3);
-			// 表示射线沿着x轴正方向
-			ray.direction = new THREE.Vector3(1, 0, 0); // 注意.direction的值需要是单位向量，不是的话可以执行.normalize()归一化或者说标准化
-			// 三角形三个点坐标
-			const p1 = new THREE.Vector3(100, 25, 0);
-			const p2 = new THREE.Vector3(100, -25, 25);
-			const p3 = new THREE.Vector3(100, -25, -25);
-			const point = new THREE.Vector3();//用来记录射线和三角形的交叉点
-			// `.intersectTriangle()`计算射线和三角形是否相交叉，相交返回交点，不相交返回null
-			const result = ray.intersectTriangle(p1, p2, p3, false, point); // 参数4表示是否进行背面剔除，p1,p2,p3可以理解为一个三角形，有正反两面
-			console.log('交叉点坐标', point);
-			console.log('查看是否相交', result);
-
-			/* 
 				射线拾取模型示例
 			*/
 
 			// 创建射线拾取模型
 			const geometry = new THREE.SphereGeometry(10, 20, 20);
 			// 为每个模型创建独立的材质（注：如果共用一个材质，后续的变色操作会使相同材质的模型全部变色）
-			const material1 = new THREE.MeshLambertMaterial({ color: 0x009999 });
-			const material2 = new THREE.MeshLambertMaterial({ color: 0x009999 });
-			const material3 = new THREE.MeshLambertMaterial({ color: 0x009999 });
+			const material1 = new THREE.MeshLambertMaterial({ color: 0xf2f3f5 });
+			const material2 = new THREE.MeshLambertMaterial({ color: 0xf2f3f5 });
+			const material3 = new THREE.MeshLambertMaterial({ color: 0xf2f3f5 });
 			const mesh1 = new THREE.Mesh(geometry, material1);
 			const mesh2 = new THREE.Mesh(geometry, material2);
 			mesh2.position.y = 30;
@@ -112,6 +106,14 @@
 				intersects[1].object.material.color.set(0x00B42A);
 				// ...
 			}
+
+			// 创建标签模型
+			const div = document.getElementById("tag");
+			// div.style.top = '-161px'; //平移-161px，指示线端点和标注点重合
+			const tag = new CSS2DObject(div); // HTML元素转化为threejs的CSS2模型对象
+			tag.position.set(0, 0, 0); // HTML标签标注位置，一般放在需要标签的模型的位置（同mesh.position）,默认标签几何中心与标注点重合
+			scene.add(tag); // 把HTML元素对应的CSS2模型对象添加到其它模型对象或三维场景中
+			model.add(tag);
 
 
 			/********************************创建模型-结束********************************/
@@ -136,6 +138,16 @@
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			document.body.appendChild(renderer.domElement);
 
+			// 创建CSS2渲染器 CSS2DRenderer
+			css2Renderer = new CSS2DRenderer();
+			css2Renderer.setSize(window.innerWidth, window.innerHeight); // 设置标签的尺寸范围，一般和threejs canvas画布宽高度一致即可
+			document.body.appendChild(css2Renderer.domElement);
+			css2Renderer.domElement.style.position = "absolute";
+			css2Renderer.domElement.style.top = "0px";
+			css2Renderer.domElement.style.left = "0px";
+			// 解决HTML元素标签对canvas画布鼠标事件的遮挡问题:会造成相机控件OrbitControls的旋转、缩放等操作无效，也有可能会影响你的射线拾取,等等
+			css2Renderer.domElement.style.pointerEvents = "none";
+
 			// 创建轨道控制器（控制相机,改变相机参数）
 			const controls = new OrbitControls(camera, renderer.domElement);
 			controls.minDistance = 5;
@@ -159,15 +171,26 @@
 				const y = -(py / window.innerHeight) * 2 + 1;// innerWidth、innerHeight表示canvas画布宽高度
 				// 2、射线计算
 				const raycaster = new THREE.Raycaster(); //创建一个射线投射器`Raycaster`
-				//.setFromCamera()计算射线投射器`Raycaster`的射线属性.ray
-				// 形象点说就是在点击位置创建一条射线，射线穿过的模型代表选中
-				raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
+				raycaster.setFromCamera(new THREE.Vector2(x, y), camera); // 在点击位置创建一条射线，射线穿过的模型代表选中
 				// 3、射线交叉计算
 				intersects = raycaster.intersectObjects([mesh1, mesh2, mesh3]); // 对参数中的网格模型对象进行射线交叉计算
 				console.log("射线交叉计算返回选中的模型对象", intersects);
 				if (intersects.length > 0) {
-					// 选中模型的第一个模型，设置为灰色
-					intersects[0].object.material.color.set(0x888888);
+					// 通过.ancestors属性判断那个模型对象被选中了
+					outlinePass.selectedObjects = [intersects[0].object];
+					//tag会标注在intersects[0].object.ancestors模型的局部坐标系原点位置
+					intersects[0].object.add(tag);
+					chooseObj = intersects[0].object;
+					// ...更改标签数据等
+				} else {
+					// 关闭标签操作
+					if (chooseObj) {//把原来选中模型对应的标签和发光描边隐藏
+						outlinePass.selectedObjects = [];//无发光描边
+						chooseObj.remove(tag);//从场景移除
+
+						// 现在你单击按钮去关闭HTML元素标签，如果发现无效，有可能是HTML标签设置了属性.style.pointerEvents = 'none'
+						// 可以考虑把标签的子元素，关闭按钮，单独设置.style.pointerEvents = 'auto'或者style = "pointer-events: auto;"
+					}
 				}
 			})
 
@@ -192,12 +215,11 @@
 		outlinePass.selectedObjects = [intersects[0].object];
 		composer.addPass(outlinePass);
 
-		function onWindowResize() { // 注意：窗口、canvas画布尺寸可能有变化
-			// const width = window.innerWidth - 200; //canvas画布宽度
-			// const height = window.innerHeight - 60; //canvas画布高度
+		function onWindowResize() {
 			const width = window.innerWidth;
 			const height = window.innerHeight;
 			renderer.setSize(width, height);
+			css2Renderer.setSize(window.innerWidth, window.innerHeight);
 			camera.aspect = width / height;
 			camera.updateProjectionMatrix();
 		}
@@ -205,6 +227,7 @@
 		// 执行渲染循环
 		function animate() {
 			composer.render();
+			css2Renderer.render(scene, camera);
 			requestAnimationFrame(animate);
 		}
 
