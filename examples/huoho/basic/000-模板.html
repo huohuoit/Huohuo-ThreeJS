@@ -24,9 +24,8 @@
 	</script>
 	<script type="module">
 		import * as THREE from "../../../build/three.module.js";
-		import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-
 		import { GUI } from "three/addons/libs/lil-gui.module.min.js";
+		import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 		let gui;
 
@@ -91,20 +90,17 @@
 			controls.target.set(0, 0, 0); //与lookAt参数保持一致
 			controls.update(); //update()函数内会执行camera.lookAt(controls.targe)
 
-			// 执行渲染操作
-			renderer.render(scene, camera);
-
 			window.addEventListener("resize", onWindowResize);
 
 			initGui();
 		}
-
+		// canvas画布跟随窗口变化
 		function onWindowResize() {
-			camera.aspect = window.innerWidth / window.innerHeight;
-
-			camera.updateProjectionMatrix();
-
+			// canvas画布宽高度重新设置
 			renderer.setSize(window.innerWidth, window.innerHeight);
+			// 相机参数重新设置
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
 		}
 
 		// 执行渲染循环
@@ -112,7 +108,7 @@
 			renderer.render(scene, camera);
 			requestAnimationFrame(animate);
 		}
-    animate();
+		animate();
 
 		function initGui() {
 			gui = new GUI();
