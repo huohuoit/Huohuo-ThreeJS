@@ -19,7 +19,12 @@
 			CSS2渲染器默认会把标签设置为display: block;，这样就不用自己代码恢复HTML标签元素的隐藏状态了
 	-->
 	<!-- <div id="tag" style="display: none;">标签内容</div> -->
-	<div id="tag" style="color: red; padding: 2px; background: rgba(255,255,255,0.8); border-radius: 2px;">标签内容</div>
+
+	<!-- backface-visibility: hidden; ———— 禁止CSS3DObject标签对应HTMl元素背面显示 -->
+	<div id="tag"
+		style="color: red; padding: 2px; background: rgba(255,255,255,0.8); border-radius: 2px; backface-visibility: hidden;">
+		标签内容</div>
+	<div id="spriteTag">精灵模型</div>
 	<script type="importmap">
 			{
 				"imports": {
@@ -30,27 +35,25 @@
 		</script>
 	<script type="module">
 		/* 
-		场景标注标签信息：
-		1、HTML元素创建标签（用于标注三维场景中模型信息）
-		2、CSS2模型对象CSS2DObject（把一个HTML元素转化为一个类似threejs网格模型的对象）
-		3、CSS2渲染器CSS2DRenderer（类似WebGL渲染器WebGLRenderer，用来渲染HTML元素标签对应的CSS2模型对象CSS2DObject）
-			本质上就是根据CSS2模型对象的xyz世界坐标，计算HTML标签元素在canvas画布上的屏幕像素坐标位置
-		4、CSS2Renderer.domElement重新定位（将渲染标签进行位置插入，它其实就是当前HTML元素的父元素）
+		CSS3DRenderer渲染HTML标签：
+			CSS3渲染器CSS3DRenderer和CSS2渲染器CSS2DRenderer整体使用流程基本相同
+			HTML标签渲染效果方面不同：如CSS3渲染的标签会跟着场景相机同步缩放，而CSS2渲染的标签默认保持自身像素值
+			其HTML标签对象相当于一个矩形平面网格模型Mesh（如：HTML像素高度40px = 高度为40的矩形平面网格模型）
 	*/
 
 		import * as THREE from "../../../build/three.module.js";
 		import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 		import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-		// 引入CSS2渲染器CSS2DRenderer和CSS2模型对象CSS2DObject
 		import {
-			CSS2DRenderer,
-			CSS2DObject,
-		} from "three/addons/renderers/CSS2DRenderer.js";
+			CSS3DRenderer,
+			CSS3DObject,
+		} from "three/addons/renderers/CSS3DRenderer.js";
+		import { CSS3DSprite } from 'three/addons/renderers/CSS3DRenderer.js'; // 引入CSS3精灵模型对象CSS3DSprite
 
 		let gui;
 
-		let camera, scene, renderer, css2Renderer, intersects;
+		let camera, scene, renderer, css3Renderer, intersects;
 
 		init();
 
@@ -71,8 +74,7 @@
 			/********************************创建模型-开始********************************/
 
 			// 创建模型
-			const geometry = new THREE.BoxGeometry(20, 20, 20);
-			// const geometry = new THREE.ConeGeometry(25, 80); // 圆锥体案例操作
+			const geometry = new THREE.ConeGeometry(15, 50);
 			const material = new THREE.MeshPhongMaterial({
 				color: 0xff0000,
 				transparent: true,
@@ -81,7 +83,7 @@
 			const mesh = new THREE.Mesh(geometry, material);
 			// mesh.position.set(0, 0, 0);
 
-			// 如果需要标注的mesh有多个父对象，且都有自己的位置属性.position，设置mesh标签对象位置CSS2DObject.position的时候，就需要考虑mesh父对象的位置对mesh的影响
+			// 如果需要标注的mesh有多个父对象，且都有自己的位置属性.position，设置mesh标签对象位置CSS3DObject.position的时候，就需要考虑mesh父对象的位置对mesh的影响
 
 			const meshGroup = new THREE.Group(); // mesh设置一个父对象meshGroup
 			meshGroup.add(mesh);
@@ -89,13 +91,27 @@
 
 			scene.add(mesh);
 
+			/* 
+				注意：标签<div id="tag"></div>在CSS3渲染器渲染的时候，默认会被设置为pointer-events: auto;
+							这时候虽然css3Renderer.domElement不遮挡canvas画布的鼠标事件，但是<div id="tag"></div>会遮挡canvas画布的鼠标事件
+				处理：通过代码强制改变CSS3渲染器给标签设置的.style.pointerEvents = 'auto',设置为.style.pointerEvents = 'none'
+							修改.style.pointerEvents，要在实例化new CSS3DObject(div)之后，因为执行new CSS3DObject(div)的时候，会把HTML标签设置为.style.pointerEvents = 'auto'
+			*/
+
 			// 创建标签模型
 			const div = document.getElementById("tag");
-			// 通常我们给模型打标签时，标签会在模型的旁边，而标签的箭头或指示线放在标注点上，所以可以做平移操作
-			// div.style.top = '-161px'; //平移-161px，指示线端点和标注点重合
-			const tag = new CSS2DObject(div); // HTML元素转化为threejs的CSS2模型对象
-			tag.position.set(0, 0, 0); // HTML标签标注位置，一般放在需要标签的模型的位置（同mesh.position）,默认标签几何中心与标注点重合
-			scene.add(tag); // 把HTML元素对应的CSS2模型对象添加到其它模型对象或三维场景中
+			div.style.pointerEvents = 'none';
+			const tag = new CSS3DObject(div); // HTML元素转化为threejs的CSS2模型对象
+			tag.scale.set(0.5, 0.5, 1);//缩放标签尺寸
+			tag.position.y += 50; // 相对父对象局部坐标原点偏移50,刚好标注在圆锥
+			mesh.add(tag);
+			// 创建CSS3精灵模型
+			const divCSS3 = document.getElementById("spriteTag");
+			divCSS3.style.pointerEvents = 'none';
+			const spriteTag = new CSS3DSprite(divCSS3);
+			spriteTag.position.y += 80; // 相对父对象局部坐标原点偏移50,刚好标注在圆锥
+			mesh.add(spriteTag);
+
 
 			// 这里代码块是举例需要作标注的mesh，有多个父对象情况下的处理
 			const worldPosition = new THREE.Vector3();
@@ -105,19 +121,6 @@
 			// 最后meshGroup和tag放在同一个父对象中即可
 			group.add(meshGroup, tag);
 			scene.add(group);
-
-			// 如果标注CSS2模型对象作为Mesh子对象（把标签对象加到模型对象Mesh中）————默认是标注在Mesh的局部坐标系坐标原点
-			mesh.add(tag); // 可以直接继承mesh的世界坐标，直接设置标签模型位置
-			// 你也可以获取几何体顶点1的xyz坐标，将标签设置于此
-			// const pos = geometry.attributes.position;
-			// tag.position.set(pos.getX(0), pos.getY(0), pos.getZ(0));
-
-			// // 一些对圆锥体geometry的操作
-			// //y轴正方向，平移高度一半
-			// geometry.translate(0, 40, 0);
-			// //圆锥mesh局部坐标系原点在自己底部时候，标签需要向上偏移圆锥自身高度
-			// tag.position.y += 80;
-			// // geometry.translate(0, -40, 0); //y轴负方向，平移高度一半，标签刚好标注在顶部
 
 			/********************************创建模型-结束********************************/
 
@@ -141,22 +144,15 @@
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			document.body.appendChild(renderer.domElement);
 
-			// 创建CSS2渲染器 CSS2DRenderer
-			css2Renderer = new CSS2DRenderer();
-			css2Renderer.setSize(window.innerWidth, window.innerHeight); // 设置标签的尺寸范围，一般和threejs canvas画布宽高度一致即可
-			css2Renderer.domElement.style.position = "absolute";
-			css2Renderer.domElement.style.top = "0px";
-			css2Renderer.domElement.style.left = "0px";
+			// 创建CSS3渲染器 CSS2DRenderer
+			css3Renderer = new CSS3DRenderer();
+			css3Renderer.setSize(window.innerWidth, window.innerHeight); // 设置标签的尺寸范围，一般和threejs canvas画布宽高度一致即可
+			css3Renderer.domElement.style.position = "absolute";
+			css3Renderer.domElement.style.top = "0px";
+			css3Renderer.domElement.style.left = "0px";
 			// 解决HTML元素标签对canvas画布鼠标事件的遮挡问题:会造成相机控件OrbitControls的旋转、缩放等操作无效，也有可能会影响你的射线拾取,等等
-			css2Renderer.domElement.style.pointerEvents = "none";
-			document.body.appendChild(css2Renderer.domElement);
-
-			// 如果存在canvas画布遮挡标签HTML元素的问题，可以调整CSS布局或者直接修改z-index
-			// renderer.domElement.style.zIndex = -1;
-			// css2Renderer.domElement.style.zIndex = 1;
-			// 如果改变canvas画布在网页位置，标签父元素也要重新定位
-			// renderer.domElement.style.marginTop = "200px";
-			// css2Renderer.domElement.style.top = "200px";
+			css3Renderer.domElement.style.pointerEvents = "none";
+			document.body.appendChild(css3Renderer.domElement);
 
 			// 创建轨道控制器（控制相机,改变相机参数）
 			const controls = new OrbitControls(camera, renderer.domElement);
@@ -174,8 +170,8 @@
 
 		function onWindowResize() {
 			renderer.setSize(window.innerWidth, window.innerHeight);
-			// HTML标签css2Renderer.domElement尺寸重新设置
-			css2Renderer.setSize(window.innerWidth, window.innerHeight);
+			// HTML标签css3Renderer.domElement尺寸重新设置
+			css3Renderer.setSize(window.innerWidth, window.innerHeight);
 			camera.aspect = window.innerWidth / window.innerHeight;
 			camera.updateProjectionMatrix();
 		}
@@ -183,7 +179,7 @@
 		// 执行渲染循环
 		function animate() {
 			renderer.render(scene, camera);
-			css2Renderer.render(scene, camera);
+			css3Renderer.render(scene, camera);
 			requestAnimationFrame(animate);
 		}
 		animate();

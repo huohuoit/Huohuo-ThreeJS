@@ -141,12 +141,12 @@
 			// 创建CSS2渲染器 CSS2DRenderer
 			css2Renderer = new CSS2DRenderer();
 			css2Renderer.setSize(window.innerWidth, window.innerHeight); // 设置标签的尺寸范围，一般和threejs canvas画布宽高度一致即可
-			document.body.appendChild(css2Renderer.domElement);
 			css2Renderer.domElement.style.position = "absolute";
 			css2Renderer.domElement.style.top = "0px";
 			css2Renderer.domElement.style.left = "0px";
 			// 解决HTML元素标签对canvas画布鼠标事件的遮挡问题:会造成相机控件OrbitControls的旋转、缩放等操作无效，也有可能会影响你的射线拾取,等等
 			css2Renderer.domElement.style.pointerEvents = "none";
+			document.body.appendChild(css2Renderer.domElement);
 
 			// 创建轨道控制器（控制相机,改变相机参数）
 			const controls = new OrbitControls(camera, renderer.domElement);
