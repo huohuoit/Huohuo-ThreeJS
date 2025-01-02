@@ -10,6 +10,32 @@
 			overflow: hidden;
 			margin: 0px;
 		}
+
+		#tag {
+			width: 70px;
+			height: 40px;
+			line-height: 32px;
+			text-align: center;
+			color: red;
+			font-size: 16px;
+			background-image: url(./images/sprite1.png);
+			background-repeat: no-repeat;
+			background-size: 100% 100%;
+			/* padding: 2px;
+			border-radius: 2px;
+			background: rgba(255,255,255,0.8); */
+			/* 禁止CSS3DObject标签对应HTMl元素背面显示 */
+			backface-visibility: hidden;
+		}
+
+		#sprite {
+			color: aqua;
+			width: 10px;
+			height: 4px;
+			line-height: 4px;
+			text-align: center;
+			font-size: 2px;
+		}
 	</style>
 </head>
 
@@ -19,12 +45,8 @@
 			CSS2渲染器默认会把标签设置为display: block;，这样就不用自己代码恢复HTML标签元素的隐藏状态了
 	-->
 	<!-- <div id="tag" style="display: none;">标签内容</div> -->
-
-	<!-- backface-visibility: hidden; ———— 禁止CSS3DObject标签对应HTMl元素背面显示 -->
-	<div id="tag"
-		style="color: red; padding: 2px; background: rgba(255,255,255,0.8); border-radius: 2px; backface-visibility: hidden;">
-		标签内容</div>
-	<div id="spriteTag">精灵模型</div>
+	<div id="tag" style="display: none;">标签内容</div>
+	<div id="sprite">精灵模型</div>
 	<script type="importmap">
 			{
 				"imports": {
@@ -98,19 +120,78 @@
 							修改.style.pointerEvents，要在实例化new CSS3DObject(div)之后，因为执行new CSS3DObject(div)的时候，会把HTML标签设置为.style.pointerEvents = 'auto'
 			*/
 
-			// 创建标签模型
+			// 案例1：创建标签模型
 			const div = document.getElementById("tag");
-			div.style.pointerEvents = 'none';
 			const tag = new CSS3DObject(div); // HTML元素转化为threejs的CSS2模型对象
-			tag.scale.set(0.5, 0.5, 1);//缩放标签尺寸
+			tag.scale.set(0.1, 0.1, 1);//缩放标签尺寸
 			tag.position.y += 50; // 相对父对象局部坐标原点偏移50,刚好标注在圆锥
 			mesh.add(tag);
-			// 创建CSS3精灵模型
-			const divCSS3 = document.getElementById("spriteTag");
-			divCSS3.style.pointerEvents = 'none';
-			const spriteTag = new CSS3DSprite(divCSS3);
-			spriteTag.position.y += 80; // 相对父对象局部坐标原点偏移50,刚好标注在圆锥
-			mesh.add(spriteTag);
+
+			/* 
+				精灵模型Sprite和CSS3精灵模型CSS3DSprite标签差异:
+					精灵模型渲染Sprite的标签，默认可以被其他网格模型遮挡
+					CSS3渲染器渲染的HTML元素标签是叠加在canvas画布上，不会被其它网格模型遮挡
+			*/
+
+			// 案例2：创建CSS3精灵模型
+			// const divCSS3 = document.getElementById("sprite");
+			// const sprite = new CSS3DSprite(divCSS3);
+			// 创建贴图精灵模型
+			const texLoader = new THREE.TextureLoader();
+			const texture = texLoader.load("./images/sprite0.jpg");
+			const spriteMaterial = new THREE.SpriteMaterial({
+				map: texture,
+			});
+			const sprite = new THREE.Sprite(spriteMaterial);
+			sprite.scale.set(4, 4, 1);
+			sprite.position.y = 25;
+			// sprite.position.y = 4 / 2; //标签底部箭头和空对象标注点重合
+			mesh.add(sprite);
+
+			// 案例3：如果从外部引入模型并进行标注
+			// const obj = gltf.scene.getObjectByName('设备A标注');
+			// obj.add(tag); //tag会标注在空对象obj对应的位置
+
+			// 案例4：如果需要批量标注的标签数据arr
+			// const arr = ['设备A', '设备B', '停车场'];
+			// for (let i = 0; i < arr.length; i++) {
+			// 	// 注意是多个标签，需要克隆复制一份
+			// 	const div = document.getElementById('tag').cloneNode();
+			// 	div.innerHTML = arr[i];//标签数据填写
+			// 	const tag = new CSS3DSprite(div);
+			// 	// div.style.pointerEvents = 'none'; //避免标签遮挡canvas鼠标事件
+			// 	const obj = gltf.scene.getObjectByName(arr[i] + '标注');// obj是建模软件中创建的一个空对象
+			// 	obj.add(tag); //tag会标注在空对象obj对应的位置
+			// 	tag.scale.set(0.1, 0.1, 1);//适当缩放模型标签
+			// 	tag.position.y = 40 / 2 * 0.1;//标签底部箭头和空对象标注点重合：偏移高度像素值一半*缩放比例
+			// }
+
+			// 案例5： canvas画布绘制标签
+			// 生成一个canvas对象，标注文字为参数name
+			const canvas5 = createCanvas('设备A');
+			const texture5 = new THREE.CanvasTexture(canvas5); //canvas画布作为CanvasTexture的参数创建一个纹理对象
+			const spriteMaterial5 = new THREE.SpriteMaterial({
+				map: texture5,
+			});
+			const sprite5 = new THREE.Sprite(spriteMaterial5);
+			sprite5.scale.set(4, 4, 1);
+			sprite5.position.y = 30;
+			// sprite.position.y = 4 / 2; //标签底部箭头和空对象标注点重合
+			mesh.add(sprite5);
+
+			// 注：如果Canvas包含外部图片作为背景，注意创建CanvasTexture的时候
+			// 		 要等图像加载完成再执行THREE.CanvasTexture(canvas)
+			// 		 如果还未加载完成，创建纹理时候，读取画布像素时候，会不包含图片
+			// const img = new Image();
+			// img.src = "./标签箭头背景.png";
+			// img.onload = function () {
+			// 	const canvas = createCanvas(img, '设备A');//创建一个canvas画布
+			// 	// 图片加载完成后，读取canvas像素数据创建CanvasTexture
+			// 	const texture = new THREE.CanvasTexture(canvas);
+			// 	// ...
+			// 	const sprite = new THREE.Sprite(spriteMaterial);
+			// 	// ...
+			// }
 
 
 			// 这里代码块是举例需要作标注的mesh，有多个父对象情况下的处理
@@ -155,7 +236,9 @@
 			document.body.appendChild(css3Renderer.domElement);
 
 			// 创建轨道控制器（控制相机,改变相机参数）
-			const controls = new OrbitControls(camera, renderer.domElement);
+			// const controls = new OrbitControls(camera, renderer.domElement);
+			// 监听范围包括标签区域的整个页面，否则会出现标签区域遮挡鼠标事件问题
+			const controls = new OrbitControls(camera, document.body);
 			controls.minDistance = 5;
 			controls.maxDistance = 100;
 			controls.target.set(0, 0, 0);
@@ -193,6 +276,76 @@
 			// ...
 
 			gui.open();
+		}
+
+
+		/**
+		 * 创建一个canvas对象，绘制几何图案或添加文字（自动适配了不同长度的文字标注）
+		 */
+
+		function createCanvas(name) {
+			const canvas = document.createElement("canvas");
+			const arr = name.split(""); //分割为单独字符串
+			let num = 0;
+			const reg = /[\u4e00-\u9fa5]/;
+			for (let i = 0; i < arr.length; i++) {
+				if (reg.test(arr[i])) { //判断是不是汉字
+					num += 1;
+				} else {
+					num += 0.5; //英文字母或数字累加0.5
+				}
+			}
+			// 根据字符串符号类型和数量、文字font-size大小来设置canvas画布宽高度
+			const h = 80; //根据渲染像素大小设置，过大性能差，过小不清晰
+			const w = h + num * 32;
+			canvas.width = w;
+			canvas.height = h;
+			const h1 = h * 0.8;
+			const c = canvas.getContext('2d');
+			// 定义轮廓颜色，黑色半透明
+			c.fillStyle = "rgba(0,0,0,0.5)";
+			// 绘制半圆+矩形轮廓
+			const R = h1 / 2;
+			c.arc(R, R, R, -Math.PI / 2, Math.PI / 2, true); //顺时针半圆
+			c.arc(w - R, R, R, Math.PI / 2, -Math.PI / 2, true); //顺时针半圆
+			c.fill();
+			// 绘制箭头
+			c.beginPath();
+			const h2 = h - h1;
+			c.moveTo(w / 2 - h2 * 0.6, h1);
+			c.lineTo(w / 2 + h2 * 0.6, h1);
+			c.lineTo(w / 2, h);
+			c.fill();
+			// 文字
+			c.beginPath();
+			c.translate(w / 2, h1 / 2);
+			c.fillStyle = "#ffffff"; //文本填充颜色
+			c.font = "normal 32px 宋体"; //字体样式设置
+			c.textBaseline = "middle"; //文本与fillText定义的纵坐标
+			c.textAlign = "center"; //文本居中(以fillText定义的横坐标)
+			c.fillText(name, 0, 0);
+			return canvas;
+		}
+
+		/*
+			cavnas精灵标签封装(标注多个)
+		*/
+
+		function createSprite(obj, name) { // 标注位置对应的模型对象obj  name：标注文字
+			const canvas = createCanvas(name);//创建一个canvas画布
+			// canvas画布作为CanvasTexture的参数创建一个纹理对象
+			const texture = new THREE.CanvasTexture(canvas);
+			const spriteMaterial = new THREE.SpriteMaterial({
+				map: texture,
+			});
+			const sprite = new THREE.Sprite(spriteMaterial);
+			// 控制精灵大小(sprite宽高比和canvas画布保持一致)
+			const s = 0.05;//通过canvas宽高度缩放后，设置sprite.scale，避免图文宽高比变形
+			const x = canvas.width * s;
+			const y = canvas.height * s;
+			sprite.scale.set(x, y, 1);
+			sprite.position.y = y / 2; //标签底部箭头和空对象标注点重合  
+			obj.add(sprite); //tag会标注在空对象obj对应的位置
 		}
 	</script>
 </body>
