@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>变形动画示例</title>
+	<style>
+		body {
+			overflow: hidden;
+			margin: 0px;
+		}
+	</style>
+</head>
+
+<body>
+	<script type="importmap">
+			{
+				"imports": {
+					"three": "../../../build/three.module.js",
+					"three/addons/": "../../jsm/"
+				}
+			}
+	</script>
+	<script type="module">
+		import * as THREE from "../../../build/three.module.js";
+		import { GUI } from "three/addons/libs/lil-gui.module.min.js";
+		import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+		let gui;
+		let camera, scene, renderer;
+		let mesh, mixer, clock;
+
+		init();
+		animate();
+
+		function init() {
+			// 场景初始化
+			scene = new THREE.Scene();
+			camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+			camera.position.set(100, 100, 100);
+			camera.lookAt(0, 0, 0);
+
+			// 创建基础几何体和变形目标
+			const geometry = new THREE.BoxGeometry(50, 50, 50);
+			// 创建两个变形目标：一个变高，一个变细
+			const target1 = new THREE.BoxGeometry(50, 200, 50).attributes.position;
+			const target2 = new THREE.BoxGeometry(10, 50, 10).attributes.position;
+			// 设置变形目标数据
+			geometry.morphAttributes.position = [target1, target2];
+
+			// 创建材质
+			const material = new THREE.MeshPhongMaterial({
+				color: 0xff0000,
+				transparent: true,
+				opacity: 0.7,
+			});
+
+			// 创建网格模型
+			mesh = new THREE.Mesh(geometry, material);
+			mesh.name = "Box"; // 为关键帧动画命名模型
+			scene.add(mesh);
+
+			// 创建动画
+			createMorphAnimation();
+
+			// 灯光设置
+			const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+			dirLight.position.set(5, 10, 5);
+			
+			scene.add(dirLight);
+			scene.add(new THREE.AmbientLight(0x666666));
+
+			// 辅助工具
+			scene.add(new THREE.AxesHelper(50));
+			scene.add(new THREE.GridHelper(50, 50, 0x444444, 0x888888));
+
+			// 渲染器设置
+			renderer = new THREE.WebGLRenderer();
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+
+			// 控制器设置
+			const controls = new OrbitControls(camera, renderer.domElement);
+			controls.minDistance = 5;
+			controls.maxDistance = 100;
+			
+			controls.target.set(0, 0, 0);
+			controls.update();
+
+			// 事件监听和GUI初始化
+			window.addEventListener("resize", onWindowResize);
+			initGui();
+		}
+
+		function createMorphAnimation() {
+			// 创建变形动画的关键帧数据
+			const KF1 = new THREE.KeyframeTrack(
+				'Box.morphTargetInfluences[0]',  // 目标属性
+				[0, 5],                          // 关键帧时间
+				[0, 1]                           // 关键帧值
+			);
+			const KF2 = new THREE.KeyframeTrack(
+				'Box.morphTargetInfluences[1]',
+				[5, 10],
+				[0, 1]
+			);
+
+			// 创建动画剪辑
+			const clip = new THREE.AnimationClip("morph", 10, [KF1, KF2]);
+
+			// 设置动画混合器
+			clock = new THREE.Clock();
+			mixer = new THREE.AnimationMixer(mesh);
+			const clipAction = mixer.clipAction(clip);
+			clipAction.loop = THREE.LoopOnce;           // 只播放一次
+			clipAction.clampWhenFinished = true;        // 播放完保持最后状态
+			clipAction.play();
+		}
+
+		function initGui() {
+			gui = new GUI();
+			gui.title("变形控制器");
+
+			// GUI控制变形权重（控制geometry自身顶点和变形目标顶点分别对模型形状的形象程度）
+			const morphControls = {
+				target1: 0,
+				target2: 0,
+			};
+
+			gui.add(morphControls, 'target1', 0, 1)
+				.name('变高')
+				.onChange((value) => {
+					mesh.morphTargetInfluences[0] = value;
+				});
+
+			gui.add(morphControls, 'target2', 0, 1)
+				.name('变细')
+				.onChange((value) => {
+					mesh.morphTargetInfluences[1] = value;
+				});
+
+			gui.open();
+		}
+
+		function onWindowResize() {
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		}
+
+		function animate() {
+			requestAnimationFrame(animate);
+			
+			// 更新动画混合器
+			if (mixer) {
+				mixer.update(clock.getDelta());
+			}
+			
+			renderer.render(scene, camera);
+		}
+	</script>
+</body>
+
+</html>
