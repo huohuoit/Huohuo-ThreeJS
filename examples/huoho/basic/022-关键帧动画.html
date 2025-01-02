@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Document</title>
+	<style>
+		body {
+			overflow: hidden;
+			margin: 0px;
+		}
+	</style>
+</head>
+
+<body>
+	<script type="importmap">
+			{
+				"imports": {
+					"three": "../../../build/three.module.js",
+					"three/addons/": "../../jsm/"
+				}
+			}
+	</script>
+	<script type="module">
+		import * as THREE from "../../../build/three.module.js";
+		import { GUI } from "three/addons/libs/lil-gui.module.min.js";
+		import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+		let gui;
+
+		let camera, scene, renderer, mixer;
+
+		init();
+
+		function init() {
+			// 创建相机
+			camera = new THREE.PerspectiveCamera(
+				45,
+				window.innerWidth / window.innerHeight,
+				0.1,
+				200
+			);
+			camera.position.set(100, 100, 100); //根据场景渲染范围尺寸设置相机位置
+			camera.lookAt(0, 0, 0);
+
+			// 创建场景
+			scene = new THREE.Scene();
+
+			/********************************创建模型-开始********************************/
+
+			// 创建模型
+			const geometry = new THREE.BoxGeometry(5, 5, 5);
+			const material = new THREE.MeshPhongMaterial({
+				color: 0xff0000,
+				transparent: true,
+				opacity: 0.5,
+				// wireframe: true // 添加线框模式
+			});
+			const mesh = new THREE.Mesh(geometry, material);
+			// mesh.position.set(0, 0, 0);
+			scene.add(mesh);
+
+			/* 
+				创建关键帧动画：
+						1、模型命名
+						2、KeyframeTrack 设置关键帧数据
+						3、创建关键帧动画 AnimationClip
+						4、AnimationMixer 播放关键帧动画 AnimationClip
+			*/
+			mesh.name = "Box"; // 给需要设置关键帧动画的模型命名
+			const times = [0, 3, 6]; //时间轴上，设置三个时刻0、3、6秒
+			const values = [0, 0, 0, 50, 0, 0, 0, 0, 50]; // times中三个不同时间点，物体分别对应values中的三个xyz坐标
+			const posKF = new THREE.KeyframeTrack('Box.position', times, values); // 0~3秒，物体从(0,0,0)逐渐移动到(100,0,0),3~6秒逐渐从(100,0,0)移动到(0,0,100)
+			const colorKF = new THREE.KeyframeTrack('Box.material.color', [2, 5], [1, 0, 0, 0, 0, 1]); // 从2秒到5秒，物体从红色逐渐变化为蓝色
+			const clip = new THREE.AnimationClip("test", 6, [posKF, colorKF]);// 基于关键帧数据，创建一个clip关键帧动画对象，命名"test"，持续时间6秒
+			mixer = new THREE.AnimationMixer(mesh); //包含关键帧动画的模型对象作为AnimationMixer的参数创建一个播放器mixer
+			const clipAction = mixer.clipAction(clip); // 执行播放器的clipAction方法，返回的AnimationAction对象用来控制如何播放关键帧动画
+			clipAction.play(); //.play()控制动画播放，默认循环播放
+
+			// 一些控制播放的操作功能举例
+			// clipAction.loop = THREE.LoopOnce; //不循环播放，且执行一次后默认回到动画开头
+			// clipAction.clampWhenFinished = true; // 如果你想物体状态停留在动画结束的时候
+			// clipAction.stop(); //动画停止结束，回到开始状态
+			// clipAction.paused = true;//切换为暂停状态
+			// clipAction.timeScale = 2;// 2倍速
+
+			// 从时间轴上选择时间段播放动画（注意，该情况需要设置：非循环模式、动画结束物体停留在结束状态）
+			// clipAction.time = 1;	// 从1秒时刻对应动画开始播放
+			// clip.duration = 5; // 到5秒时刻对应的动画状态停止
+			// clipAction.loop = THREE.LoopOnce;
+			// clipAction.clampWhenFinished = true;
+
+			// 使用拖动条控制动画时（一般基于GUI）：先暂停，再通过拖动条控制
+			// clipAction.paused = true;
+			// clipAction.time += 0.1;
+			// // ...
+			// clipAction.paused = false;
+
+			/********************************创建模型-结束********************************/
+
+			// 添加平行光
+			const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+			dirLight.position.set(5, 10, 5);
+			scene.add(dirLight);
+
+			// 添加辅助坐标系
+			const axesHelper = new THREE.AxesHelper(50);
+			axesHelper.layers.enableAll();
+			scene.add(axesHelper);
+
+			// 添加地面网格并设置颜色
+			const gridHelper = new THREE.GridHelper(50, 50, 0x444444, 0x888888);
+			scene.add(gridHelper);
+
+			// 创建WebGL渲染器
+			renderer = new THREE.WebGLRenderer();
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+
+			// 创建轨道控制器（控制相机,改变相机参数）
+			const controls = new OrbitControls(camera, renderer.domElement);
+			controls.minDistance = 5;
+			controls.maxDistance = 100;
+			controls.target.set(0, 0, 0); //与lookAt参数保持一致
+			controls.update(); //update()函数内会执行camera.lookAt(controls.targe)
+
+			window.addEventListener("resize", onWindowResize);
+
+			initGui();
+		}
+		// canvas画布跟随窗口变化
+		function onWindowResize() {
+			// canvas画布宽高度重新设置
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			// 相机参数重新设置
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+		}
+
+		// 执行渲染循环
+		const clock = new THREE.Clock();
+		function animate() {
+			renderer.render(scene, camera);
+			requestAnimationFrame(animate);
+
+			const frameT = clock.getDelta();
+			// 如果想播放动画,需要周期性执行`mixer.update()`更新AnimationMixer时间数据
+			mixer.update(frameT);
+		}
+		animate();
+
+		function initGui() {
+			gui = new GUI();
+
+			gui.title("初始化GUI");
+
+			// gui.add(layers, 'Toggle Name');
+			// ...
+
+			gui.open();
+		}
+	</script>
+</body>
+
+</html>
