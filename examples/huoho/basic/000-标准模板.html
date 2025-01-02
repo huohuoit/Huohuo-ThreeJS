@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Three.js Template</title>
+	<style>
+		/* 基础样式设置 */
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		body {
+			overflow: hidden;
+			width: 100vw;
+			height: 100vh;
+		}
+		#container {
+			width: 100%;
+			height: 100%;
+		}
+		/* 加载进度提示 */
+		#loading {
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: 16px;
+			display: none;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="container"></div>
+	<div id="loading">加载中...</div>
+
+	<script type="importmap">
+			{
+				"imports": {
+					"three": "../../../build/three.module.js",
+					"three/addons/": "../../jsm/"
+				}
+			}
+	</script>
+
+	<script type="module">
+		import * as THREE from "three";
+		import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+		import { GUI } from "three/addons/libs/lil-gui.module.min.js";
+		import Stats from 'three/addons/libs/stats.module.js';
+
+		class ThreeApp {
+			constructor(container) {
+				// 基础属性初始化
+				this.container = container;
+				this.scene = null;
+				this.camera = null;
+				this.renderer = null;
+				this.controls = null;
+				this.stats = null;
+				this.gui = null;
+				this.clock = new THREE.Clock();
+				this.mixers = []; // 动画混合器数组
+				this.assets = {}; // 资源存储对象
+				
+				// 场景配置参数
+				this.config = {
+					camera: {
+						fov: 45,
+						near: 0.1,
+						far: 1000,
+						position: new THREE.Vector3(100, 100, 100),
+						lookAt: new THREE.Vector3(0, 0, 0)
+					},
+					controls: {
+						enableDamping: true,
+						dampingFactor: 0.05,
+						minDistance: 5,
+						maxDistance: 1000
+					},
+					lights: {
+						ambient: {
+							color: 0x404040,
+							intensity: 1
+						},
+						directional: {
+							color: 0xffffff,
+							intensity: 1,
+							position: new THREE.Vector3(5, 10, 5)
+						}
+					},
+					helpers: {
+						axes: true,
+						grid: true
+					}
+				};
+
+				this.init();
+			}
+
+			init() {
+				this.createScene();
+				this.createCamera();
+				this.createRenderer();
+				this.createControls();
+				this.createLights();
+				this.createHelpers();
+				this.createStats();
+				this.createGUI();
+				this.addEventListeners();
+				this.animate();
+			}
+
+			createScene() {
+				this.scene = new THREE.Scene();
+				this.scene.background = new THREE.Color(0x000000);
+			}
+
+			createCamera() {
+				const { fov, near, far, position, lookAt } = this.config.camera;
+				this.camera = new THREE.PerspectiveCamera(
+					fov,
+					this.container.clientWidth / this.container.clientHeight,
+					near,
+					far
+				);
+				this.camera.position.copy(position);
+				this.camera.lookAt(lookAt);
+			}
+
+			createRenderer() {
+				this.renderer = new THREE.WebGLRenderer({ antialias: true });
+				this.renderer.setPixelRatio(window.devicePixelRatio);
+				this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+				this.renderer.shadowMap.enabled = true;
+				this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+				this.container.appendChild(this.renderer.domElement);
+			}
+
+			createControls() {
+				const { enableDamping, dampingFactor, minDistance, maxDistance } = this.config.controls;
+				this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+				this.controls.enableDamping = enableDamping;
+				this.controls.dampingFactor = dampingFactor;
+				this.controls.minDistance = minDistance;
+				this.controls.maxDistance = maxDistance;
+			}
+
+			createLights() {
+				const { ambient, directional } = this.config.lights;
+				
+				// 环境光
+				const ambientLight = new THREE.AmbientLight(ambient.color, ambient.intensity);
+				this.scene.add(ambientLight);
+
+				// 平行光
+				const dirLight = new THREE.DirectionalLight(directional.color, directional.intensity);
+				dirLight.position.copy(directional.position);
+				dirLight.castShadow = true;
+				dirLight.shadow.mapSize.width = 2048;
+				dirLight.shadow.mapSize.height = 2048;
+				this.scene.add(dirLight);
+			}
+
+			createHelpers() {
+				const { axes, grid } = this.config.helpers;
+				
+				if (axes) {
+					const axesHelper = new THREE.AxesHelper(50);
+					this.scene.add(axesHelper);
+				}
+
+				if (grid) {
+					const gridHelper = new THREE.GridHelper(100, 100, 0x444444, 0x888888);
+					this.scene.add(gridHelper);
+				}
+			}
+
+			createStats() {
+				this.stats = new Stats();
+				document.body.appendChild(this.stats.dom);
+			}
+
+			createGUI() {
+				this.gui = new GUI();
+				// 添加GUI控制项示例
+				const params = {
+					backgroundColor: '#000000'
+				};
+				
+				this.gui.addColor(params, 'backgroundColor')
+					.onChange(value => {
+						this.scene.background = new THREE.Color(value);
+					});
+			}
+
+			addEventListeners() {
+				window.addEventListener('resize', this.onWindowResize.bind(this));
+			}
+
+			onWindowResize() {
+				this.camera.aspect = this.container.clientWidth / this.container.clientHeight;
+				this.camera.updateProjectionMatrix();
+				this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+			}
+
+			// 异步加载资源的通用方法
+			async loadAsset(loader, url) {
+				return new Promise((resolve, reject) => {
+					loader.load(url,
+						(asset) => resolve(asset),
+						(xhr) => {
+							console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+						},
+						(error) => reject(error)
+					);
+				});
+			}
+
+			update() {
+				// 更新控制器
+				if (this.controls) this.controls.update();
+
+				// 更新动画混合器
+				const delta = this.clock.getDelta();
+				this.mixers.forEach(mixer => mixer.update(delta));
+
+				// 在这里添加自定义更新逻辑
+			}
+
+			render() {
+				this.renderer.render(this.scene, this.camera);
+			}
+
+			animate() {
+				requestAnimationFrame(this.animate.bind(this));
+				this.update();
+				this.render();
+				if (this.stats) this.stats.update();
+			}
+
+			// 清理资源的方法
+			dispose() {
+				// 移除事件监听
+				window.removeEventListener('resize', this.onWindowResize.bind(this));
+				
+				// 清理GUI
+				if (this.gui) this.gui.destroy();
+				
+				// 清理渲染器
+				this.renderer.dispose();
+				
+				// 清理几何体和材质
+				this.scene.traverse(object => {
+					if (object.geometry) object.geometry.dispose();
+					if (object.material) {
+						if (Array.isArray(object.material)) {
+							object.material.forEach(material => material.dispose());
+						} else {
+							object.material.dispose();
+						}
+					}
+				});
+			}
+		}
+
+		// 创建应用实例
+		const app = new ThreeApp(document.getElementById('container'));
+
+		// 示例：添加一个简单的立方体
+		const geometry = new THREE.BoxGeometry(5, 5, 5);
+		const material = new THREE.MeshPhongMaterial({
+			color: 0xff0000,
+			transparent: true,
+			opacity: 0.7,
+		});
+		const cube = new THREE.Mesh(geometry, material);
+		app.scene.add(cube);
+	</script>
+</body>
+
+</html>
