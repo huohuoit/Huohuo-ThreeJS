@@ -15,13 +15,13 @@
 		{
 			"imports": {
 				"three": "https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.module.js",
-				"@tweenjs/tween.js": "https://cdn.jsdelivr.net/npm/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"
+				"@tweenjs/tween.js": "https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.esm.js"
 			}
 		}
 	</script>
 	<script type="module">
 		import * as THREE from "three";
-		import { Tween, update } from "@tweenjs/tween.js";
+		import { Tween, Group } from "@tweenjs/tween.js";
 
 		let camera, scene, renderer, cube;
 
@@ -72,7 +72,7 @@
 			const targetLookAt = new THREE.Vector3(0, 0, 0); // 观察目标
 
 			// 创建相机动画
-			new TWEEN.Tween(camera.position)
+			new Tween(camera.position)
 				.to({ x: targetPosition.x, y: targetPosition.y, z: targetPosition.z }, 2000)
 				.onUpdate(() => {
 					camera.lookAt(targetLookAt); // 更新相机的观察目标
@@ -82,14 +82,14 @@
 			// 创建立方体淡入动画
 			cube.material.transparent = true; // 开启透明度
 			cube.material.opacity = 0; // 初始透明度为0
-			new TWEEN.Tween(cube.material)
+			new Tween(cube.material)
 				.to({ opacity: 1 }, 2000) // 目标透明度为1
 				.start();
 		}
 
 		function animate() {
 			requestAnimationFrame(animate);
-			update(); // 更新Tween动画
+			Group.update(); // 使用 Group.update()
 			renderer.render(scene, camera); // 渲染场景
 		}
 	</script>
