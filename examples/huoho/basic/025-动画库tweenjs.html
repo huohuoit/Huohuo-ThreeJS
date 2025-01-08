@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>TweenJS Example</title>
+	<style>
+		body {
+			overflow: hidden;
+			margin: 0;
+		}
+	</style>
+	<script type="importmap">
+		{
+			"imports": {
+				"three": "https://cdn.jsdelivr.net/npm/three@0.152.0/build/three.module.js",
+				"@tweenjs/tween.js": "https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.esm.js"
+			}
+		}
+	</script>
+	<script type="module">
+		import * as THREE from "three";
+		import { Tween, Group } from "@tweenjs/tween.js";
+
+		let camera, scene, renderer, cube;
+
+		init();
+		animate();
+
+		function init() {
+			// 创建场景
+			scene = new THREE.Scene();
+
+			// 创建相机
+			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+			camera.position.set(0, 5, 10); // 设置相机初始位置
+
+			// 创建渲染器
+			renderer = new THREE.WebGLRenderer();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+
+			// 创建立方体模型
+			const geometry = new THREE.BoxGeometry();
+			const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+			cube = new THREE.Mesh(geometry, material);
+			scene.add(cube);
+
+			// 添加光源
+			const light = new THREE.DirectionalLight(0xffffff, 1);
+			light.position.set(5, 10, 7.5);
+			scene.add(light);
+
+			// 监听窗口大小变化
+			window.addEventListener('resize', onWindowResize);
+
+			// 添加点击事件
+			document.addEventListener('click', onDocumentClick);
+		}
+
+		function onWindowResize() {
+			// 更新相机和渲染器的大小
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+		}
+
+		function onDocumentClick() {
+			// 点击时触发相机动画
+			const targetPosition = new THREE.Vector3(0, 5, 0); // 目标位置
+			const targetLookAt = new THREE.Vector3(0, 0, 0); // 观察目标
+
+			// 创建相机动画
+			new Tween(camera.position)
+				.to({ x: targetPosition.x, y: targetPosition.y, z: targetPosition.z }, 2000)
+				.onUpdate(() => {
+					camera.lookAt(targetLookAt); // 更新相机的观察目标
+				})
+				.start();
+
+			// 创建立方体淡入动画
+			cube.material.transparent = true; // 开启透明度
+			cube.material.opacity = 0; // 初始透明度为0
+			new Tween(cube.material)
+				.to({ opacity: 1 }, 2000) // 目标透明度为1
+				.start();
+		}
+
+		function animate() {
+			requestAnimationFrame(animate);
+			Group.update(); // 使用 Group.update()
+			renderer.render(scene, camera); // 渲染场景
+		}
+	</script>
+</head>
+
+<body>
+</body>
+
+</html>
